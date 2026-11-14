@@ -3,16 +3,16 @@ import {SITES, sitePosition, nearbyLanterns} from './expeditions.js';
 import {trace} from './systems.js';
 import * as T from '../vendor/three.module.min.js';
 import {atlas,meshChunk} from './mesh.js';
-import {BIOMES, CHUNK, HALF, LANDMARKS, clamp, landmarkPosition, randomAt, surface} from './world.js';
+import {BLOCKS, BIOMES, CHUNK, HALF, biomeAt, LANDMARKS, clamp, landmarkPosition, randomAt, surface} from './world.js';
 
 export const V = (x=0,y=0,z=0) => new T.Vector3(x,y,z);
 const unitBox=new T.BoxGeometry(1,1,1);
 const wrapNear=(coordinate,center,span)=>coordinate-Math.floor((coordinate-center)/span+.5)*span;
 const ATMOSPHERE=[
-  {air:.026,dust:'#b5ddc0',light:'#f4f7df',shade:'#e0eee4',rise:.21},
-  {air:.034,dust:'#adb6d9',light:'#d5e0ff',shade:'#d4d9f1',rise:-.09},
-  {air:.039,dust:'#e8b6c4',light:'#ffe6e2',shade:'#f0dae2',rise:.34},
-  {air:.053,dust:'#9dd0d1',light:'#a9d8d2',shade:'#a9c2c5',rise:.12}
+  {air:.023,dust:'#cbd3a1',light:'#faf0cb',shade:'#e5f1de',rise:.21},
+  {air:.029,dust:'#9cb4ec',light:'#bbcfff',shade:'#c7d5fa',rise:-.09},
+  {air:.032,dust:'#f0bbcc',light:'#ffe0cd',shade:'#ffe3e5',rise:.34},
+  {air:.046,dust:'#9dd0d1',light:'#a9d8d2',shade:'#a9c2c5',rise:.12}
 ];
 const mat=(color,emissive=0)=>new T.MeshStandardMaterial({color,roughness:.86,emissive,emissiveIntensity:.55});
 const rock=mat('#526c65'), metal=mat('#343c45'), bone=mat('#9c9087'), fur=mat('#434450');
@@ -143,7 +143,8 @@ export class View {
       horizon:{value:new T.Color('#455b4e')},
       zenith:{value:new T.Color('#17222c')},
       lunar:{value:new T.Color('#b9d7be')},
-      direction:{value:V(-13,16.4,-76).normalize()}
+      direction:{value:V(-13,16.4,-76).normalize()},
+      drift:{value:0}
     };
     this.sky=new T.Mesh(new T.SphereGeometry(91,20,12),new T.ShaderMaterial({
       uniforms,side:T.BackSide,depthWrite:false,
@@ -159,12 +160,15 @@ export class View {
         uniform vec3 zenith;
         uniform vec3 lunar;
         uniform vec3 direction;
+        uniform float drift;
         void main(){
           vec3 d=normalize(ray);
           float up=clamp(d.y,0.,1.);
           vec3 color=mix(horizon,zenith,smoothstep(.01,.70,up));
           float moon=max(dot(direction,d),0.);
           color+=lunar*pow(moon,35.)*.11;
+          float band=sin(d.x*18. + d.z*12. + up*32. + drift);
+          color+=lunar*(smoothstep(.87,.98,band)-.5)*.025*(1.-up);
           gl_FragColor=vec4(color,1.);
           #include <colorspace_fragment>
         }`
@@ -269,6 +273,7 @@ export class View {
       marker.position.set(x,y+.67,z);
       this.decor.add(marker);
     }
+    this.buildLandscape(world);
     this.lightClock=0;
     this.mobs=spawnMobs(this.decor,world);
 
@@ -301,6 +306,58 @@ export class View {
     const stars=new T.BufferGeometry().setAttribute('position',new T.Float32BufferAttribute(points,3));
     if(!this.starMat) this.starMat=new T.PointsMaterial({color:'#afc8c2',size:.12,fog:false,transparent:true,opacity:.44});
     this.decor.add(new T.Points(stars,this.starMat));
+  }
+
+  buildLandscape(world) {
+    const forms=[['#aca984',.08,1.25],['#7786a3',.16,.72],['#c49eaf',.13,.85]];
+    this.plants=[];
+    for(let biome=0;biome<3;biome++) {
+      const data=[];
+      for(let z=-HALF+3;z<HALF-3;z+=2) for(let x=-HALF+3;x<HALF-3;x+=2) {
+        if(biomeAt(x,20,z)!==biome || Math.abs(z)<3) continue;
+        if(randomAt(world.number+791,x,z)<(biome===0?.78:.9)) continue;
+        if(world.settlements.some(site=>x>=site.x-2 && x<site.x+site.width+2 && z>=site.z-2 && z<site.z+site.depth+2)) continue;
+        const y=surface(world,x,z);
+        if(y<9 || y>27 || !world.get(x,y-1,z)) continue;
+        data.push({x,y,z,scale:.6+randomAt(world.number+94,x,z)*.7});
+      }
+      const [color,width,height]=forms[biome];
+      const mesh=new T.InstancedMesh(new T.ConeGeometry(width,height,3),
+        new T.MeshBasicMaterial({color,side:T.DoubleSide,fog:true}),data.length);
+      mesh.userData.ownedMaterial=true;
+      const dummy=new T.Object3D();
+      data.forEach((plant,i)=>{
+        dummy.position.set(plant.x+.5,plant.y+height*plant.scale*.5,plant.z+.5);
+        dummy.rotation.y=randomAt(world.number+93,plant.x,plant.z)*6.28;
+        dummy.scale.setScalar(plant.scale);dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix);
+      });
+      mesh.instanceMatrix.needsUpdate=true;mesh.frustumCulled=false;
+      this.decor.add(mesh);this.plants.push({mesh,data,height});
+    }
+    const vertices=[];
+    for(let side=0;side<4;side++) for(let n=-HALF;n<HALF;n+=3) {
+      const x=side<2?(side?HALF+2:-HALF-2):n;
+      const z=side>=2?(side===2?-HALF-2:HALF+2):n;
+      const x2=side<2?x:n+3,z2=side>=2?z:n+3;
+      const h=21+5*randomAt(world.number+112,n,side);
+      vertices.push(x,8,z,x2,8,z2,x,h,z,x2,8,z2,x2,h,z2,x,h,z);
+    }
+    const geometry=new T.BufferGeometry();
+    geometry.setAttribute('position',new T.Float32BufferAttribute(vertices,3));
+    const rim=new T.Mesh(geometry,new T.MeshBasicMaterial({color:'#293f43',side:T.DoubleSide,fog:true}));
+    rim.userData.ownedMaterial=true;this.decor.add(rim);
+  }
+
+  updatePlants(x,z) {
+    for(const {mesh,data,height} of this.plants) {
+      const i=data.findIndex(p=>p.x===x && p.z===z);
+      if(i<0) continue;
+      const plant=data[i],dummy=new T.Object3D();
+      const visible=surface(this.world,x,z)===plant.y && this.world.get(x,plant.y-1,z);
+      dummy.position.set(x+.5,plant.y+height*plant.scale*.5,z+.5);
+      dummy.scale.setScalar(visible?plant.scale:0);
+      dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix);mesh.instanceMatrix.needsUpdate=true;
+    }
   }
 
   rebuild(key) {
@@ -339,11 +396,13 @@ export class View {
     for(const key of keys) if(this.meshes.has(key)) this.rebuild(key);
   }
 
-  burst(cell,reduced,placing=false) {
+  burst(cell,reduced,placing,id) {
     if(reduced) return;
+    this.partMaterial.color.set(BLOCKS[id].light);
     for(let i=0;i<(placing?7:this.parts.length);i++) {
       const part=this.parts[i];
-      part.t=.2+Math.random()*.23;
+      part.t=.16+Math.random()*.22;
+      part.mesh.scale.setScalar(placing?.045:.065);
       part.mesh.position.set(cell[0]+.5,cell[1]+.6,cell[2]+.5);
       const speed=placing?1.3:3;
       part.v.set((Math.random()-.5)*speed,Math.random()*speed,(Math.random()-.5)*speed);
@@ -473,6 +532,7 @@ export class View {
     this.sky.material.uniforms.zenith.value.copy(this.scene.background).multiplyScalar(biome===3?.54:.42);
     this.sky.material.uniforms.lunar.value.set(biome===3?'#292735':'#b9d7be');
     this.sky.position.set(p.x,p.y+1.62,p.z);
+    this.sky.material.uniforms.drift.value=settings.reduced?0:t*.008;
     this.scene.fog.color.lerp(this.targetFog,w);
     this.scene.fog.density=T.MathUtils.lerp(this.scene.fog.density,air.air+(low?.007:0)+(settings.view===2?.008:0),backdrop);
     const surfaceVisibility=biome===3?0:Math.max(.16,1-Math.max(0,18-p.y)*.12);

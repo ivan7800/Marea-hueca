@@ -82,7 +82,7 @@ try {
   await page.goto(origin+'?qa=1');
   for(const site of world.settlements) {
     const village=site.id==='boyas';
-    const x=site.x+(village?2.5:5.5), edge=site.z+site.depth;
+    const x=site.x+site.entrance+.5, edge=site.z+site.depth;
     // Empieza en el terreno de aproximación y cruza la entrada con el teclado.
     await load(x,edge+2.0);
     await turn(0);
@@ -109,7 +109,7 @@ try {
       await until(()=>document.getElementById('notice').textContent.startsWith('Aguja ·'));
       await page.keyboard.press('f');
       await until(()=>document.getElementById('notice').textContent.includes('recuperando la señal'));
-    } else {
+    } else if(site.id==='costillas') {
       await page.keyboard.press('e');
       await page.locator('[data-recipe="2"]').click();
       await page.locator('[data-recipe="5"]').click();
@@ -131,8 +131,8 @@ try {
     await button('Continuar').click();
     await resume('Capturar cursor');
     assert.ok((await read()).discoveries.includes(site.id));
-    assert.ok((await read()).bag[village?'needle':'saltlance']);
-    if(!village) assert.ok((await read()).ward);
+    assert.ok((await read()).bag[village?'needle':site.id==='costillas'?'saltlance':5]);
+    if(site.id==='costillas') assert.ok((await read()).ward);
   }
   // La posición de esta partida de prueba permite aislar el encuentro de la ruta.
   await load(-23.5,.5,undefined,{saltlance:1,5:3});

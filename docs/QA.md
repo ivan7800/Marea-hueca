@@ -67,3 +67,11 @@ El recorrido de aceptación utilizó I/J/K/L, M y N para cámara, extracción y 
 - La portada usa una ilustración Canvas estática con una transición CSS lenta; la preferencia de movimiento reducido anula la animación. No se ha realizado una evaluación visual con usuarios externos ni una escucha de audio.
 - El recorrido completo `tests/browser.mjs` pasó en Chromium 141 headless, Linux virtualizado y SwiftShader a 1280 × 720 CSS: extracción, colocación, mochila, fabricación, pausa, recarga, tres biomas, ambos ecos y Cámara Sorda, regreso al menú, importación/exportación y HTML autónomo desde `file://` sin red. Cero errores de aplicación, respuestas HTTP fallidas o errores WebGL durante la prueba. La emulación táctil del menú y ajustes pasó; esto no acredita juego táctil.
 - Tomas fijas de aproximadamente 4,35 s en calidad baja y nueve chunks: La Costra 15,8 FPS (67 intervalos, p95 133,4 ms) y La Salina Ciega 13,4 FPS (56 intervalos, p95 250 ms). Son observaciones de renderizado por software en un host de carga variable, sin comparación causal con 0.4.0.
+
+## Candidata 0.6.0
+
+- Node 24.22.1: 15 pruebas unitarias correctas. La nueva prueba comprueba que v3 preserva sus emplazamientos, posición, descubrimientos y ediciones, y selecciona otra huella para el aljibe cuando la primera está ocupada. Se generaron la web y el HTML autónomo.
+- En la referencia 0.5.0, Chromium 141 con SwiftShader, 1280 × 720, calidad baja y nueve chunks registró 17,1 FPS en La Costra y 15,8 en la Salina. No hay medidas posteriores comparables.
+- En la sesión de continuación, las tres suites Playwright quedaron bloqueadas al lanzar Chromium (`process_singleton_posix.cc: socket() failed: Operation not permitted`). Pendientes recorrido, capturas nuevas, rendimiento con estructuras y criaturas, prueba autónoma en navegador y escucha. Mantener el despliegue actual hasta que se verifique la candidata.
+
+- La continuación añadió borde escénico, vegetación y cielo. Las 15 pruebas unitarias y las dos compilaciones siguen pasando. La inspección de fotogramas nuevos continúa pendiente por el fallo de arranque de Chromium del entorno. No hay mediciones nuevas de FPS de esta candidata ni escucha física del audio.

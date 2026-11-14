@@ -26,6 +26,13 @@ export class Sound {
       if(!Audio) return;
       try {this.ctx=new Audio();} catch {return;}
       const ctx=this.ctx;
+      this.grit=ctx.createBuffer(1,Math.ceil(ctx.sampleRate*.18),ctx.sampleRate);
+      const samples=this.grit.getChannelData(0);
+      let seed=7919;
+      for(let i=0;i<samples.length;i++) {
+        seed=(Math.imul(seed,1664525)+1013904223)>>>0;
+        samples[i]=seed/2147483648-1;
+      }
       this.music=ctx.createGain();
       this.effects=ctx.createGain();
       this.master=ctx.createGain();
@@ -164,10 +171,40 @@ export class Sound {
     }
   }
 
+  texture(frequency,duration,volume,hardness) {
+    if(this.ctx?.state!=='running' || !this.effectsLevel || this.voices.size>=MAX_VOICES) return;
+    const ctx=this.ctx, now=ctx.currentTime;
+    const source=ctx.createBufferSource(), filter=ctx.createBiquadFilter(), gain=ctx.createGain();
+    source.buffer=this.grit;
+    filter.type='bandpass';
+    filter.frequency.value=frequency;
+    filter.Q.value=hardness;
+    gain.gain.setValueAtTime(.0001,now);
+    gain.gain.exponentialRampToValueAtTime(volume,now+.009);
+    gain.gain.exponentialRampToValueAtTime(.0001,now+duration);
+    const voice={osc:source,music:false};
+    this.voices.add(voice);
+    source.connect(filter).connect(gain).connect(this.effects);
+    source.onended=()=>{
+      source.disconnect();filter.disconnect();gain.disconnect();
+      this.voices.delete(voice);
+    };
+    source.start(now);
+    source.stop(now+duration);
+  }
+
   event(name,tone=150) {
-    if(name==='mine') this.tone(tone,'triangle',.14,.24,.42);
-    if(name==='place') this.tone(tone*.7,'sine',.15,.32,.62);
-    if(name==='step') this.tone(tone,'triangle',.058,.08,.51);
+    if(name==='mine') {
+      this.texture(tone*6,.14,.19,1.4);
+      this.tone(tone,'triangle',.14,.17,.42);
+    }
+    if(name==='place') {
+      this.texture(tone*3,.065,.12,.6);
+      this.tone(tone*.7,'sine',.15,.26,.62);
+    }
+    if(name==='step') this.texture(tone*4,.078,.11,.9);
+    if(name==='ward') this.tone(162,'sine',.72,.18,.66,this.effects,{attack:.08});
+    if(name==='supply') this.tone(420,'sine',.27,.16,1.2);
     if(name==='hurt') this.tone(102,'sine',.4,.32,.43);
     if(name==='charge') this.tone(112,'triangle',.43,.13,.6);
     if(name==='creature') this.tone(73,'triangle',.48,.19,1.68);

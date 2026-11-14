@@ -4,7 +4,10 @@ export const SETTLEMENTS = [
     note:'Las casas enviaban señales al muelle. Tras la retirada del mar, las boyas respondían desde debajo del suelo.'},
   {id:'costillas', title:'Estación de las Costillas', biome:'El Espinazo', width:11, depth:9, entrance:5, height:10,
     anchors:[[-29,5],[-43,15],[-27,28]], cache:[5,2], reward:{saltlance:1,ward:1,3:6,5:3,6:2,7:3},
-    note:'En el archivo hay un plano del fondo marino. Las costillas de basalto coinciden con el contorno de algo demasiado grande para caber en la cuenca.'}
+    note:'En el archivo hay un plano del fondo marino. Las costillas de basalto coinciden con el contorno de algo demasiado grande para caber en la cuenca.'},
+  {id:'aljibe', title:'Aljibe de las Agujas', biome:'La Salina Ciega', width:11, depth:9, entrance:5, height:8,
+    anchors:[[25,14],[31,-19],[17,-27]], cache:[5,2], reward:{5:4,7:4,8:1},
+    note:'Los medidores del aljibe siguen marcando niveles distintos. El más alto está grabado en el lado seco del muro.'}
 ];
 
 function building(x,z,y,minX,maxX,minZ,maxZ,door,wall,roof) {
@@ -40,6 +43,18 @@ export function settlementVoxel(site,x,y,z) {
   x-=site.x;z-=site.z;y-=site.y;
   if(y<0 || y>site.height) return null;
   const village=site.id==='boyas';
+  if(site.id==='aljibe') {
+    if(y===0) return 7;
+    if(z===7 && (x===2 || x===8)) {
+      const tip=x===2?7:5;
+      return y===tip?6:y<tip?7:0;
+    }
+    if(z===7 && y===4 && x>2 && x<8) return 7;
+    if(x===5 && z===2 && y===1) return 7;
+    if(z===1 && x>=2 && x<=8 && y<=3) return (x+2*y)%5===0?6:5;
+    if((x===2 || x===8) && z>=2 && z<=6 && y<=1+(z<4)) return 7;
+    return 0;
+  }
   if(y===0) return village ? (x===5 || z>=6?7:1) : (x===5 || z>=7?7:3);
   if(village) {
     if(x===5 && z===1) {

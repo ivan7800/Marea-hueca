@@ -42,11 +42,15 @@ const contents={
 function body(title,html) { const [eyebrow,heading]=contents[title]; return `<div class="panel-inner"><div class="panel-header"><div><small>${eyebrow}</small><h2 id="panel-title">${heading}</h2></div><button data-action="back" aria-label="Cerrar">×</button></div>${html}</div>`; }
 function buttons(...values) {return '<div class="panel-actions">'+values.map(([action,label,primary])=>`<button data-action="${action}"${primary?' class="primary"':''}>${label}</button>`).join('')+'</div>';}
 function disk() {try{return storage?.getItem(slot)??null;}catch{return null;}}
-function notify(message,seconds=3.7) {
+function notify(message,seconds=3.7,kind='info') {
+  $('notice').dataset.kind=kind;
   $('notice').textContent=message;
   lastToast=performance.now()+seconds*1000;
 }
-function storeSettings() {try{storage.setItem(settingsSlot,JSON.stringify(settings));}catch{} }
+function syncMotion() { document.documentElement.classList.toggle('reduced-motion',settings.reduced); }
+syncMotion();
+function storeSettings() {
+  syncMotion();try{storage.setItem(settingsSlot,JSON.stringify(settings));}catch{} }
 function refreshMenu() {
   const saved=!!disk(), playable=controls();
   $('continue').disabled=!saved || !playable; $('new').disabled=!playable;
@@ -57,6 +61,12 @@ function stop() {
   keys.clear(); mining=false;mined=0;jump=false;mineKey='';physics=0;
   if(state) state.player.vx=state.player.vz=0;
 }
+function inventorySelection() {
+  for(const button of panel.querySelectorAll('[data-equip]')) {
+    button.setAttribute('aria-pressed',String(button.dataset.equip===activeItem()));
+  }
+}
+
 function show(name) {
   if(name==='new') seenAtCreation=disk();
   panelName=name;
@@ -70,7 +80,7 @@ function show(name) {
     journal:()=> {
       const settlements=world.settlements.map(site=>{
         const found=state.discoveries.includes(site.id);
-        return `<section class="journal-entry"><strong>${site.title}</strong><small>${site.biome} · X ${site.x+5} · Z ${site.z+site.depth-1}</small><p>${found?site.note:'Busca el armario de suministros y pulsa F.'}</p></section>`;
+        return `<section class="journal-entry"><strong>${site.title}</strong><small>${site.biome} · X ${site.x+site.entrance} · Z ${site.z+site.depth-1}</small><p>${found?site.note:'Busca los suministros bajo el marcador y pulsa F.'}</p></section>`;
       }).join('');
       const landmarks=SITES.map(site=>{
         const found=state.discoveries.includes(site.id);
@@ -81,14 +91,17 @@ function show(name) {
     },
     settings:()=> `<div class="form-grid"><h3>Escucha y mirada</h3>${[['music','Música'],['effects','Efectos'],['sensitivity','Sensibilidad']].map(([k,n])=>`<label class="setting">${n}<input data-setting="${k}" type="range" min="0" max="100" value="${settings[k]}"></label>`).join('')}<h3>Imagen y comodidad</h3><label class="setting">Distancia de visión<select data-setting="view">${[[2,'Corta'],[3,'Normal'],[4,'Larga']].map(([n,w])=>`<option value="${n}"${settings.view===n?' selected':''}>${w}</option>`).join('')}</select></label><label class="setting">Resolución 3D<select data-setting="resolution">${[['low','Baja'],['auto','Normal'],['high','Alta']].map(([n,w])=>`<option value="${n}"${settings.resolution===n?' selected':''}>${w}</option>`).join('')}</select></label><label class="check"><input data-setting="mute" type="checkbox"${settings.mute?' checked':''}> Silencio total</label><label class="check"><input data-setting="reduced" type="checkbox"${settings.reduced?' checked':''}> Reducir movimiento y efectos</label></div>${buttons(['back','Volver',true])}`,
     guide:()=> `<p>Construye a tu ritmo. Los ecos y los asentamientos son descubrimientos opcionales.</p><div class="control-grid"><div><kbd>W A S D</kbd><span>Moverse</span></div><div><kbd>ESPACIO</kbd><span>Saltar</span></div><div><kbd>RATÓN / I J K L</kbd><span>Mirar</span></div><div><kbd>IZQ / M</kbd><span>Extraer</span></div><div><kbd>DER / N</kbd><span>Colocar</span></div><div><kbd>F</kbd><span>Usar o escuchar</span></div><div><kbd>1–8 / RUEDA</kbd><span>Elegir casilla</span></div><div><kbd>E / C</kbd><span>Mochila / cuaderno</span></div><div><kbd>ESC / P</kbd><span>Pausa y cursor</span></div></div><p class="panel-hint">Música, efectos, sensibilidad y movimiento reducido se ajustan en Preferencias.</p>${buttons(['back','Volver',true])}`,
-    inventory:()=> `<p>Pulsa un objeto para ponerlo en la casilla rápida ${state.selected+1}. Selecciona casilla con 1–8 o la rueda durante la partida.</p><div class="inventory">${Object.entries(state.bag).map(([id,n])=>`<button data-equip="${id}">${chip(id)}<span>${ITEMS[id].name} · ${n}${ITEMS[id].note?`<small>${ITEMS[id].note}</small>`:''}</span></button>`).join('') || '<span>Mochila vacía.</span>'}</div><h3>Fabricación</h3><div class="recipes">${RECIPES.map((r,i)=>`<div class="recipe"><div><strong>${ITEMS[r.id].name}${r.count>1?` × ${r.count}`:''}</strong><small>${r.note}<br>${Object.entries(r.costs).map(([id,n])=>`${n} ${ITEMS[id].name}`).join(' · ')}</small></div><button data-recipe="${i}"${canCraft(state,r)?'':' disabled'}>Fabricar</button></div>`).join('')}</div>${buttons(['resume','Reanudar',true],['pause','Pausa'])}<p class="message" aria-live="polite"></p>`,
+    inventory:()=> `<p>Pulsa un objeto para ponerlo en la casilla rápida ${state.selected+1}. Selecciona casilla con 1–8 o la rueda durante la partida.</p><div class="inventory">${Object.entries(state.bag).map(([id,n])=>`<button data-equip="${id}">${chip(id)}<span>${ITEMS[id].name} · ${n}${ITEMS[id].note?`<small>${ITEMS[id].note}</small>`:''}</span></button>`).join('') || '<span>Mochila vacía.</span>'}</div><h3>Fabricación</h3><div class="recipes">${RECIPES.map((r,i)=>`<div class="recipe"><div><strong>${ITEMS[r.id].name}${r.count>1?` × ${r.count}`:''}</strong><small>${r.note}<br>${Object.entries(r.costs).map(([id,n])=>`${ITEMS[id].name} ${state.bag[id]??0}/${n}`).join(' · ')}</small></div><button data-recipe="${i}"${canCraft(state,r)?'':' disabled'}>Fabricar</button></div>`).join('')}</div>${buttons(['resume','Reanudar',true],['pause','Pausa'])}<p class="message" aria-live="polite"></p>`,
     credits:()=> `<p>Mundo, código, texturas, ilustración y sonido originales de <em>La Marea Hueca</em>. La música se sintetiza mientras juegas.</p><p>Three.js r180 · © Three.js Authors · licencia MIT incluida.</p><p><strong>Partidas locales</strong><br>Importa una copia JSON para trasladar tu mundo a otro navegador.</p><div class="panel-actions"><button data-action="import">Importar partida</button>${disk()?'<button data-action="export">Exportar partida</button>':''}<button data-action="back">Volver</button></div><input id="import-file" type="file" accept=".json,application/json" hidden><p class="message" aria-live="polite"></p>`
   };
   panel.innerHTML=body(name,templates[name]());
   if(!panel.open) panel.showModal();
+  panel.scrollTop=0;
+  if(name==='inventory') inventorySelection();
+  panel.querySelector('[data-action=back]').focus({preventScroll:true});
   if(name==='new') $('seed').focus();
   if(name==='defeat') panel.querySelector('[data-action=recover]').focus();
-  if(name==='journal') panel.querySelector('[data-action=resume]').focus();
+
 }
 function message(content) {
   const target=panel.querySelector('.message');
@@ -103,16 +116,20 @@ function cleanSave(raw) {
     if(storage.getItem(slot)!==currentRaw) throw new Error('Otra pestaña cambió la partida. Exporta esta sesión para conservarla.');
     storage.setItem(slot,raw);currentRaw=raw;
     lastSave=state.elapsed;writeFault=false;
+    $('save-state').textContent='Guardado local';
     return true;
   } catch(error) {
     writeFault=true;
+    $('save-state').textContent='Guardado fallido';
     if(panel.open) message(error.name==='QuotaExceededError'?'No queda espacio. Exporta la partida para conservarla.':error.message);
     else notify('No se pudo guardar. Puedes exportar desde la pausa.');
     return false;
   }
 }
 function save() {
-  return state && cleanSave(encode(world,state,settings));
+  if(!state) return false;
+  $('save-state').textContent='Guardando…';
+  return cleanSave(encode(world,state,settings));
 }
 function download() {
   const raw=mode!=='front' && state?encode(world,state,settings):disk();
@@ -170,6 +187,8 @@ async function start(loaded,raw,entrance) {
     }
     ({world,state}=loaded);
     settings=loaded.settings;
+    syncMotion();
+    $('save-state').textContent=raw?'Guardado local':'Sin guardar';
     currentRaw=raw;revision=0;writeFault=false;lastSave=state.elapsed;lastBiome=-1;lastLow=false;damagePulse=0;
     $('damage-layer').style.opacity='0';$('notice').textContent='';
     mode='load';closePanel();$('front').hidden=true;$('hud').hidden=true;$('loading').hidden=false;
@@ -245,7 +264,7 @@ function damage(amount,text) {
   if(mode!=='play') return;
   const p=state.player;
   p.health=Math.max(0,p.health-amount);damagePulse=settings.reduced?.23:.78;
-  sound.event('hurt');notify(text);
+  sound.event('hurt');notify(text,3.7,'danger');
   if(p.health===0) {
     mode='defeat';stop();sound.update(settings,false);state.deaths++;
     document.exitPointerLock?.();show('defeat');
@@ -254,7 +273,12 @@ function damage(amount,text) {
 function recoverPlayer() { recover(world,state);mode='pause';save();drawHUD(null); }
 function changeBlock(cell,event,id) {
   view.change(affectedChunks(cell[0],cell[2]));
-  view.burst(cell,settings.reduced,event==='place');sound.event(event,BLOCKS[id].tone);
+  view.updatePlants(cell[0],cell[2]);
+  view.burst(cell,settings.reduced,event==='place',id);
+  sound.event(event,BLOCKS[id].tone);
+  if(!$('notice').textContent || $('notice').dataset.kind==='edit') {
+    notify(`${event==='place'?'Colocado':'Recogido'} · ${BLOCKS[id].name}`,1.4,'edit');
+  }
   revision++;drawBar();
 }
 function nearbyCache(p) {
@@ -290,7 +314,7 @@ function useSpecial(id,p) {
     use(state,'ward');
     state.ward={x:p.x,y:p.y,z:p.z,until:state.elapsed+14};
     view.updateWard(state.ward,state.elapsed);
-    sound.event('craft');
+    sound.event('ward');
     notify('Umbral activo · Radio de 4,5 bloques durante 14 s.');
     drawBar();
   }
@@ -302,8 +326,9 @@ function useAction() {
   if(cache) {
     if(state.discoveries.includes(cache.id)) {notify(cache.note,7);return;}
     if(!discover(state,cache,gain)) {notify('Libera espacio en la mochila para recoger los suministros.');return;}
+    sound.event('supply');
     sound.discovery();
-    notify(`Suministros recogidos · ${cache.title}. Consulta el cuaderno.`,6);
+    notify(`Suministros recogidos · ${cache.title}. Consulta el cuaderno.`,6,'find');
     drawBar();
     return;
   }
@@ -382,7 +407,7 @@ function tick(now) {
   lastBiome=b;lastLow=tide.low;
   danger=view.creatures(dt,p,state.elapsed,tide.low,damage,charging=>{
     sound.event(charging?'charge':'creature');
-    notify(charging?'La raspadura va a embestir.':'Oyes una raspadura cerca.');
+    notify(charging?'La raspadura va a embestir.':'Oyes una raspadura cerca.',3.7,'danger');
   },settings.reduced);
   if(mode!=='play') return;
   stepClock+=dt;
@@ -468,11 +493,18 @@ panel.addEventListener('click',event=>{
   if(action==='import') $('import-file').click();
   if(action==='recover') {recoverPlayer();show('resume');}
   if(target.dataset.equip && equip(state,target.dataset.equip)) {
-    drawBar();message(`${ITEMS[target.dataset.equip].name} en la casilla ${state.selected+1}.`);
+    drawBar();inventorySelection();message(`${ITEMS[target.dataset.equip].name} en la casilla ${state.selected+1}.`);
   }
   if(target.dataset.recipe!==undefined) {
     const r=RECIPES[Number(target.dataset.recipe)];
-    if(craft(state,r)) {sound.event('craft');drawBar();show('inventory');message('Fabricado: '+ITEMS[r.id].name+'.');}
+    if(craft(state,r)) {
+      const scroll=panel.scrollTop;
+      sound.event('craft');drawBar();show('inventory');
+      panel.scrollTop=scroll;
+      const recipe=panel.querySelector(`[data-recipe="${target.dataset.recipe}"]`);
+      (recipe.disabled?panel.querySelector('[data-equip="'+r.id+'"]'):recipe)?.focus({preventScroll:true});
+      message('Fabricado: '+ITEMS[r.id].name+'.');
+    }
   }
 });
 panel.addEventListener('change',async event=>{
@@ -480,9 +512,10 @@ panel.addEventListener('change',async event=>{
   const file=event.target.files?.[0];
   if(!file) return;
   try {
+    message('Validando la copia…');
     if(file.size>2_100_000) throw new Error('El archivo excede el tamaño permitido.');
     const raw=await file.text(), loaded=decode(raw), previous=disk();
-    if(previous && !window.confirm('¿Sustituir la partida local por la copia importada?')) return;
+    if(previous && !window.confirm('¿Sustituir la partida local por la copia importada?')) {message('Importación cancelada.');return;}
     if(disk()!==previous) throw new Error('La partida local cambió en otra pestaña.');
     const validated=encode(loaded.world,loaded.state,loaded.settings);
     storage.setItem(slot,validated);

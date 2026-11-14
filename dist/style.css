@@ -210,3 +210,20 @@ dialog{width:min(640px,calc(100vw - 24px));background:linear-gradient(135deg,#1b
 @media(max-height:600px){.landing{margin-top:15px;margin-bottom:15px}h1{font-size:clamp(60px,12vh,95px);margin:12px 0}.intro{margin-bottom:10px}.mast{margin-top:10px}.front-footer{padding:8px 0}.chart-note{display:none}}
 @media(min-width:651px) and (max-height:850px){.landing{padding:12px 0}h1{font-size:clamp(72px,8vw,108px);margin:15px 0}.intro{font-size:15px;line-height:1.42;margin-bottom:10px}.actions>button{min-height:42px;padding:9px 13px}.front-links button{padding:7px 3px}.save-status{margin:7px 0 0}}
 @media(prefers-reduced-motion:reduce){#art,.slot{animation:none;transition:none}}
+
+/* Mantén el HUD legible sin filtros sobre la imagen 3D. */
+.location,.heading,.hud-pause,#objective,.aim span,#prompt,#notice,.quick-status,.quick-help {
+  backdrop-filter:none;
+  background:#091819ef;
+}
+#notice[data-kind="danger"] { border-inline-start:3px solid #e39282; }
+#notice[data-kind="find"] { border-inline-start:3px solid #9ce4c3; }
+#notice[data-kind="edit"] { color:#deede0; }
+#save-state { color:#b6c9bc; letter-spacing:.04em; text-transform:none; }
+.inventory button[aria-pressed="true"] { border-color:var(--mint); background:#24443a; }
+.inventory button[aria-pressed="true"]::after { content:"✓"; color:var(--mint); margin-left:auto; }
+.reduced-motion #art,.reduced-motion .slot { animation:none; transition:none; }
+@media(max-width:380px) {
+  .inventory{grid-template-columns:minmax(0,1fr)}
+  .recipe{align-items:flex-start}
+}
