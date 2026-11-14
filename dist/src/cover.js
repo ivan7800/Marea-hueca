@@ -18,6 +18,11 @@ export function cover(canvas) {
   const fog=c.createRadialGradient(cx,cy,r*.12,cx,cy,r*2.9);
   fog.addColorStop(0,'#91b39e68');fog.addColorStop(.42,'#6a94806b');fog.addColorStop(1,'#55745c00');
   c.fillStyle=fog;c.fillRect(0,0,w,h);
+  // A second, fractured moon makes the cover a distinct place in the same sky.
+  const mx=w*.88,my=h*.155,mr=Math.min(w,h)*.028;
+  c.strokeStyle='#c6e0bd86';c.lineWidth=1;
+  c.beginPath();c.arc(mx,my,mr,0,Math.PI*2);c.stroke();
+  c.beginPath();c.moveTo(mx-mr*.8,my+mr*.8);c.lineTo(mx+mr*.95,my-mr*.76);c.stroke();
   for(let i=0;i<700;i++) {
     const x=randomAt(3,i,3)*w, y=randomAt(3,i,4)*h*.7;
     c.fillStyle=i%5?'#b7d4b51e':'#dbe4c554';c.fillRect(x,y,i%17===0?2:1,1);
@@ -72,6 +77,14 @@ export function cover(canvas) {
     const x=w*(.37+randomAt(4,i,44)*.57), y=h*(.83+randomAt(4,i,45)*.19);
     const l=4+randomAt(4,i,46)*h*.031;
     c.strokeStyle=i%3?'#6b988d45':'#a8bd9971';c.beginPath();c.moveTo(x,y);c.lineTo(x+4,y-l);c.stroke();
+  }
+  // Dry tide contours lead the eye from the foreground toward the observatory.
+  c.lineWidth=1;
+  for(let i=0;i<7;i++) {
+    const y=h*(.84+i*.035);
+    c.strokeStyle=i%2?'#d2d9b123':'#a8d9bd35';
+    c.beginPath();c.moveTo(w*.42,y);
+    c.bezierCurveTo(w*.59,y-h*.038,w*.69,y+h*.038,w,y-h*.02);c.stroke();
   }
 }
 const slope=(i,layer)=>Math.sin(i*.19+layer*.66)*.037+Math.sin(i*.43+layer)*.017;

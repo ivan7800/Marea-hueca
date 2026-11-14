@@ -46,3 +46,9 @@ Para repetir la verificación ejecuta `npm ci`, `npm test`, `npm run build` y `n
 - Poblado de las Boyas en La Costra y Estación de las Costillas en El Espinazo. Sus edificios y accesos se incluyen en la malla normal del terreno. Se niveló el acceso de Costillas tras encontrar un desnivel bloqueante en Chromium.
 - La Aguja de resonancia y la Lanza de sal se encuentran en los almacenes. El Fanal de umbral también se puede fabricar. Los tres se equipan desde la mochila y se usan con F.
 - El esquema v3 guarda la huella elegida, los suministros recogidos y el estado de los efectos. En una partida anterior se elige una huella libre de ediciones y de la posición guardada. Si se descartan las tres huellas de un asentamiento, se omite ese asentamiento.
+
+## 0.5.0 · Portada y lectura de campo
+
+- Base de GitHub `4b1a465`, idéntica a la copia local 0.4.0. Suite inicial de 14 pruebas y ambas compilaciones correctas. Pages se sirve por rama desde la raíz; no hay workflow de usuario.
+- La escena Canvas de portada conserva el observatorio y añade señales celestes y contornos de bajamar. CSS anima solo la respiración lenta de la ilustración, con movimiento reducido respetado. No se inicia otro bucle de dibujo.
+- Menú y HUD reorganizados con estado de partida, guía de controles, estado de salud en texto y mejores paneles. Corrección de retorno desde Ajustes en portada.

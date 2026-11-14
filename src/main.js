@@ -35,6 +35,7 @@ const contents={
   inventory:['EQUIPO DE CAMPO','Mochila y fabricación'],
   journal:['EXPEDICIONES','Cuaderno de campo'],
   credits:['LA MAREA HUECA','Créditos'],
+  guide:['MANUAL DE CAMPO','Antes de entrar'],
   defeat:['REGRESO A LA COSTRA','El eco te ha encontrado'],
   resume:['PARTIDA LISTA','Vuelve a la cuenca']
 };
@@ -46,7 +47,12 @@ function notify(message,seconds=3.7) {
   lastToast=performance.now()+seconds*1000;
 }
 function storeSettings() {try{storage.setItem(settingsSlot,JSON.stringify(settings));}catch{} }
-function refreshMenu() { $('continue').disabled=!disk() || !controls(); $('new').disabled=!controls(); }
+function refreshMenu() {
+  const saved=!!disk(), playable=controls();
+  $('continue').disabled=!saved || !playable; $('new').disabled=!playable;
+  $('continue').title=!playable?'Se necesita teclado y ratón':saved?'Abrir la partida local':'Todavía no hay una partida guardada';
+  $('save-status').textContent=!playable?'La cuenca se juega con teclado y ratón. Puedes consultar ajustes y controles.':saved?'◆ Partida local disponible · Continuar abre tu último mundo':'◇ Sin partida local · Crea un mundo para comenzar';
+}
 function stop() {
   keys.clear(); mining=false;mined=0;jump=false;mineKey='';physics=0;
   if(state) state.player.vx=state.player.vz=0;
@@ -58,7 +64,7 @@ function show(name) {
   panel.setAttribute('aria-labelledby','panel-title');
   const templates={
     new:()=> `<form class="form-grid" id="seed-form"><label for="seed">Semilla del mundo</label><input type="text" id="seed" maxlength="64" required value="${DEFAULT_SEED}" spellcheck="false" autocomplete="off"><p>La misma semilla reconstruye el mismo terreno. ${disk()?'Ya hay una partida en esta ranura. Puedes descargarla antes de sustituirla.':'Empiezas en La Costra, frente al observatorio.'}</p>${disk()?'<label class="check"><input id="replace-save" type="checkbox" required> Sustituir la partida local</label>':''}<div class="panel-actions"><button type="submit" class="primary">Entrar en la cuenca</button><button data-action="random" type="button">Otra semilla</button>${disk()?'<button data-action="export" type="button">Exportar partida actual</button>':''}</div></form><p class="message"></p>`,
-    pause:()=> `<p>${pausedMessage || 'La cuenca se detiene mientras estás en pausa.'}</p>${buttons(['resume','Reanudar',true],['save','Guardar'],['inventory','Mochila'],['journal','Cuaderno'],['settings','Ajustes'],['export','Exportar partida'],['menu','Volver al menú'])}<p class="message" aria-live="polite"></p>`,
+    pause:()=> `<p>${pausedMessage || 'La cuenca se detiene mientras estás en pausa.'}</p><p class="panel-hint">El regreso al menú guarda el mundo. Exporta una copia si quieres trasladarlo.</p>${buttons(['resume','Reanudar',true],['save','Guardar'],['inventory','Mochila'],['journal','Cuaderno'],['settings','Ajustes'],['guide','Controles'],['export','Exportar partida'],['menu','Volver al menú'])}<p class="message" aria-live="polite"></p>`,
     resume:()=> `<p>Usa el ratón o I J K L para mirar. Puedes minar con M y colocar con N. Escape libera el cursor.</p>${buttons(['resume','Capturar cursor',true],['menu','Volver al menú'])}<p class="message" aria-live="polite"></p>`,
     defeat:()=> `<p>Regresarás junto al observatorio con la mochila y tus construcciones. El mundo conserva tu recorrido.</p>${buttons(['recover','Regresar a La Costra',true])}`,
     journal:()=> {
@@ -73,7 +79,8 @@ function show(name) {
       const count=SITES.filter(site=>state.discoveries.includes(site.id)).length;
       return `<p>${count}/${SITES.length} hallazgos. Examina las balizas con F.</p><div class="rows">${landmarks}</div><h3>Asentamientos</h3><div class="rows">${settlements || '<p>La cuenca conserva tus construcciones en los emplazamientos candidatos.</p>'}</div>${buttons(['resume','Reanudar',true],['pause','Pausa'])}`;
     },
-    settings:()=> `<div class="form-grid">${[['music','Música'],['effects','Efectos'],['sensitivity','Sensibilidad']].map(([k,n])=>`<label class="setting">${n}<input data-setting="${k}" type="range" min="0" max="100" value="${settings[k]}"></label>`).join('')}<label class="setting">Distancia de visión<select data-setting="view">${[[2,'Corta'],[3,'Normal'],[4,'Larga']].map(([n,w])=>`<option value="${n}"${settings.view===n?' selected':''}>${w}</option>`).join('')}</select></label><label class="setting">Resolución 3D<select data-setting="resolution">${[['low','Baja'],['auto','Normal'],['high','Alta']].map(([n,w])=>`<option value="${n}"${settings.resolution===n?' selected':''}>${w}</option>`).join('')}</select></label><label class="check"><input data-setting="mute" type="checkbox"${settings.mute?' checked':''}> Silencio total</label><label class="check"><input data-setting="reduced" type="checkbox"${settings.reduced?' checked':''}> Reducir movimiento y efectos</label></div>${buttons(['back','Volver',true])}`,
+    settings:()=> `<div class="form-grid"><h3>Escucha y mirada</h3>${[['music','Música'],['effects','Efectos'],['sensitivity','Sensibilidad']].map(([k,n])=>`<label class="setting">${n}<input data-setting="${k}" type="range" min="0" max="100" value="${settings[k]}"></label>`).join('')}<h3>Imagen y comodidad</h3><label class="setting">Distancia de visión<select data-setting="view">${[[2,'Corta'],[3,'Normal'],[4,'Larga']].map(([n,w])=>`<option value="${n}"${settings.view===n?' selected':''}>${w}</option>`).join('')}</select></label><label class="setting">Resolución 3D<select data-setting="resolution">${[['low','Baja'],['auto','Normal'],['high','Alta']].map(([n,w])=>`<option value="${n}"${settings.resolution===n?' selected':''}>${w}</option>`).join('')}</select></label><label class="check"><input data-setting="mute" type="checkbox"${settings.mute?' checked':''}> Silencio total</label><label class="check"><input data-setting="reduced" type="checkbox"${settings.reduced?' checked':''}> Reducir movimiento y efectos</label></div>${buttons(['back','Volver',true])}`,
+    guide:()=> `<p>Construye a tu ritmo. Los ecos y los asentamientos son descubrimientos opcionales.</p><div class="control-grid"><div><kbd>W A S D</kbd><span>Moverse</span></div><div><kbd>ESPACIO</kbd><span>Saltar</span></div><div><kbd>RATÓN / I J K L</kbd><span>Mirar</span></div><div><kbd>IZQ / M</kbd><span>Extraer</span></div><div><kbd>DER / N</kbd><span>Colocar</span></div><div><kbd>F</kbd><span>Usar o escuchar</span></div><div><kbd>1–8 / RUEDA</kbd><span>Elegir casilla</span></div><div><kbd>E / C</kbd><span>Mochila / cuaderno</span></div><div><kbd>ESC / P</kbd><span>Pausa y cursor</span></div></div><p class="panel-hint">Música, efectos, sensibilidad y movimiento reducido se ajustan en Preferencias.</p>${buttons(['back','Volver',true])}`,
     inventory:()=> `<p>Pulsa un objeto para ponerlo en la casilla rápida ${state.selected+1}. Selecciona casilla con 1–8 o la rueda durante la partida.</p><div class="inventory">${Object.entries(state.bag).map(([id,n])=>`<button data-equip="${id}">${chip(id)}<span>${ITEMS[id].name} · ${n}${ITEMS[id].note?`<small>${ITEMS[id].note}</small>`:''}</span></button>`).join('') || '<span>Mochila vacía.</span>'}</div><h3>Fabricación</h3><div class="recipes">${RECIPES.map((r,i)=>`<div class="recipe"><div><strong>${ITEMS[r.id].name}${r.count>1?` × ${r.count}`:''}</strong><small>${r.note}<br>${Object.entries(r.costs).map(([id,n])=>`${n} ${ITEMS[id].name}`).join(' · ')}</small></div><button data-recipe="${i}"${canCraft(state,r)?'':' disabled'}>Fabricar</button></div>`).join('')}</div>${buttons(['resume','Reanudar',true],['pause','Pausa'])}<p class="message" aria-live="polite"></p>`,
     credits:()=> `<p>Mundo, código, texturas, ilustración y sonido originales de <em>La Marea Hueca</em>. La música se sintetiza mientras juegas.</p><p>Three.js r180 · © Three.js Authors · licencia MIT incluida.</p><p><strong>Partidas locales</strong><br>Importa una copia JSON para trasladar tu mundo a otro navegador.</p><div class="panel-actions"><button data-action="import">Importar partida</button>${disk()?'<button data-action="export">Exportar partida</button>':''}<button data-action="back">Volver</button></div><input id="import-file" type="file" accept=".json,application/json" hidden><p class="message" aria-live="polite"></p>`
   };
@@ -427,7 +434,7 @@ panel.addEventListener('input',event=>settingsChange(event.target));
 function back() {
   if(mode==='defeat') return;
   if(mode==='front') {closePanel();return;}
-  if(panelName==='settings') {show(previousPanel==='front'?'pause':previousPanel);return;}
+  if(panelName==='settings' || panelName==='guide') {if(previousPanel==='front') closePanel(); else show(previousPanel);return;}
   if(['inventory','journal'].includes(panelName)) {show('pause');return;}
   resume();
 }
@@ -456,7 +463,7 @@ panel.addEventListener('click',event=>{
   if(action==='save' && save()) message('Partida guardada en este navegador.');
   if(action==='inventory') show('inventory');
   if(action==='journal') show('journal');
-  if(action==='settings') {previousPanel=panelName;show('settings');}
+  if(action==='settings' || action==='guide') {previousPanel=panelName;show(action);}
   if(action==='export') download();
   if(action==='import') $('import-file').click();
   if(action==='recover') {recoverPlayer();show('resume');}

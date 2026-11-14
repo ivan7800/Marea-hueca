@@ -1,4 +1,4 @@
-# La Marea Hueca · 0.4.0
+# La Marea Hueca · 0.5.0
 
 Sandbox voxel de exploración, construcción y supervivencia con horror cósmico. El mar se retiró de una cuenca que conserva voces bajo la piedra. Puedes excavar, construir tu refugio o salir en busca de dos ecos y llevarlos al recinto enterrado bajo el observatorio.
 
@@ -42,6 +42,10 @@ Los tres hallazgos del cuaderno son opcionales. Examínalos con F y usa sus mate
 - **Estación de las Costillas · El Espinazo.** Dos pilares enmarcan la entrada sur del archivo de basalto, cerca de X −24, Z 13. Su almacén contiene materiales, una Lanza de sal y un Fanal de umbral.
 - Entra y pulsa **F** junto al armario marcado con un diamante. Las coordenadas de tu mundo están en el cuaderno (**C**). Si todas las huellas candidatas de un asentamiento están ocupadas por ediciones antiguas, ese asentamiento se omite para preservar la partida.
 - Equipa el objeto en la mochila (**E**). La **Aguja** indica rumbo y distancia al hallazgo pendiente más cercano, con 8 segundos de recarga. La **Lanza** ahuyenta raspaduras visibles a un máximo de 5 bloques y consume una sal violeta si acierta. El **Fanal de umbral** dura 14 segundos en un radio de 4,5 bloques y se consume al activarlo. Fabrica otro con un fanal de nácar y 2 sales violetas.
+
+## Menú e interfaz
+
+La portada presenta el observatorio y el firmamento de la cuenca. Controles abre la guía de teclas desde la portada o la pausa; Ajustes agrupa audio, sensibilidad, resolución y movimiento reducido. El estado de la partida local se muestra antes de elegir Continuar. Durante el juego, la salud numérica, la herramienta equipada, la brújula, la misión opcional y los mensajes de interacción permanecen visibles.
 
 ## Banda sonora
 

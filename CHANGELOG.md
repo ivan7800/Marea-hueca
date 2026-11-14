@@ -1,5 +1,12 @@
 # Cambios
 
+## 0.5.0
+
+- Portada escénica con luna fracturada, trazas de bajamar, composición tipográfica y un pulso visual lento que respeta movimiento reducido.
+- Guía de controles accesible desde menú y pausa, estado explícito de la ranura local y paneles, barra rápida y salud con mejor jerarquía.
+- Corregida la vuelta desde Ajustes de la portada, que abría Pausa sin una partida activa.
+
+
 ## 0.4.0
 
 - Dos asentamientos construidos con vóxeles, con refugios transitables, suministros únicos y notas en el cuaderno.
