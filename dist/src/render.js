@@ -9,9 +9,9 @@ export const V = (x=0,y=0,z=0) => new T.Vector3(x,y,z);
 const unitBox=new T.BoxGeometry(1,1,1);
 const wrapNear=(coordinate,center,span)=>coordinate-Math.floor((coordinate-center)/span+.5)*span;
 const ATMOSPHERE=[
-  {air:.023,dust:'#cbd3a1',light:'#faf0cb',shade:'#e5f1de',rise:.21},
-  {air:.029,dust:'#9cb4ec',light:'#bbcfff',shade:'#c7d5fa',rise:-.09},
-  {air:.032,dust:'#f0bbcc',light:'#ffe0cd',shade:'#ffe3e5',rise:.34},
+  {air:.023,dust:'#ded7aa',light:'#fff3d5',shade:'#e5f1de',rise:.21},
+  {air:.029,dust:'#9cb4ec',light:'#d0dcff',shade:'#c7d5fa',rise:-.09},
+  {air:.032,dust:'#f0bbcc',light:'#ffe9d3',shade:'#ffe3e5',rise:.34},
   {air:.046,dust:'#9dd0d1',light:'#a9d8d2',shade:'#a9c2c5',rise:.12}
 ];
 const mat=(color,emissive=0)=>new T.MeshStandardMaterial({color,roughness:.86,emissive,emissiveIntensity:.55});
@@ -57,6 +57,29 @@ function platform(scene,world,p) {
 function expeditionModel(parent,world,site) {
   const group=new T.Group();
   group.position.set(...sitePosition(world,site));parent.add(group);
+  if(site.id==='witness') {
+    const shell=mat('#7b9696','#294e52');
+    const seam=mat('#d8a6a8','#685056');
+    // Una estructura hueca y suspendida. La forma se lee desde el sendero sin cerrar la entrada.
+    for(let i=0;i<9;i++) {
+      const angle=i*Math.PI*2/9;
+      const x=Math.cos(angle)*3.25,z=Math.sin(angle)*2.85;
+      const rib=box(group,i%3===0?seam:shell,x,2.15,z,.24,3.9,.3);
+      rib.rotation.z=-Math.sin(angle)*.28;
+      rib.rotation.x=Math.cos(angle)*.2;
+      const tip=box(group,shell,x*.83,4.3,z*.83,.33,1.2,.4);
+      tip.rotation.z=Math.sin(angle)*.35;
+    }
+    for(let i=0;i<3;i++) {
+      const arc=halo(1.3+i*.52,'#b7d6ce');
+      arc.position.set(0,3.7,0);
+      arc.rotation.set(.4+i*.37,.2+i*.51,.26+i*.41);
+      group.add(arc);
+    }
+    const core=new T.Mesh(new T.IcosahedronGeometry(.48,0),seam);
+    core.position.y=3.7;core.scale.set(1,.63,.8);group.add(core);
+    return;
+  }
   const accent=mat(site.color,site.color);
   const marker=new T.Mesh(new T.OctahedronGeometry(.28),accent);
   marker.userData.ownedMaterial=true;marker.position.y=1.25;group.add(marker);
@@ -309,30 +332,57 @@ export class View {
   }
 
   buildLandscape(world) {
-    const forms=[['#aca984',.08,1.25],['#7786a3',.16,.72],['#c49eaf',.13,.85]];
+    const palettes=['#d1b67c','#8eb6c5','#e5adc5'];
     this.plants=[];
     for(let biome=0;biome<3;biome++) {
       const data=[];
       for(let z=-HALF+3;z<HALF-3;z+=2) for(let x=-HALF+3;x<HALF-3;x+=2) {
         if(biomeAt(x,20,z)!==biome || Math.abs(z)<3) continue;
-        if(randomAt(world.number+791,x,z)<(biome===0?.78:.9)) continue;
+        if(randomAt(world.number+791,x,z)<(biome===0?.68:.79)) continue;
         if(world.settlements.some(site=>x>=site.x-2 && x<site.x+site.width+2 && z>=site.z-2 && z<site.z+site.depth+2)) continue;
+        if(SITES.some(site=>Math.hypot(x-site.x,z-site.z)<(site.id==='witness'?6:3.5))) continue;
         const y=surface(world,x,z);
         if(y<9 || y>27 || !world.get(x,y-1,z)) continue;
-        data.push({x,y,z,scale:.6+randomAt(world.number+94,x,z)*.7});
+        data.push({x,y,z,scale:.7+randomAt(world.number+94,x,z)*.6});
       }
-      const [color,width,height]=forms[biome];
-      const mesh=new T.InstancedMesh(new T.ConeGeometry(width,height,3),
-        new T.MeshBasicMaterial({color,side:T.DoubleSide,fog:true}),data.length);
+      // Tres familias dibujadas con triángulos planos, sin materiales ni objetos por planta.
+      const vertices=[];
+      const triangle=(a,b,c)=>vertices.push(...a,...b,...c);
+      if(biome===0) {
+        for(let i=0;i<5;i++) {
+          const a=i*2.4,dx=Math.cos(a),dz=Math.sin(a);
+          const height=.95+(i%3)*.25;
+          triangle([dx*.03,0,dz*.03],[dx*.17,height*.57,dz*.17],[dx*.27,height,dz*.27]);
+          triangle([dx*.03,0,dz*.03],[dx*.27,height,dz*.27],[dx*.07,height*.56,dz*.07]);
+        }
+      } else if(biome===1) {
+        for(let i=0;i<4;i++) {
+          const a=i*Math.PI/2,dx=Math.cos(a),dz=Math.sin(a);
+          triangle([0,0,0],[dx*.08,.45,dz*.08],[dx*.57,.76,dz*.57]);
+          triangle([0,0,0],[dx*.57,.76,dz*.57],[dx*.32,1.2,dz*.32]);
+          triangle([dx*.32,1.2,dz*.32],[dx*.57,.76,dz*.57],[dx*.49,1.36,dz*.49]);
+        }
+      } else {
+        for(let i=0;i<6;i++) {
+          const a=i*1.047,dx=Math.cos(a),dz=Math.sin(a);
+          triangle([0,.03,0],[dx*.17,.22,dz*.17],[dx*.51,.39,dz*.51]);
+          triangle([dx*.17,.22,dz*.17],[dx*.51,.39,dz*.51],[dx*.38,.88,dz*.38]);
+        }
+      }
+      const geometry=new T.BufferGeometry();
+      geometry.setAttribute('position',new T.Float32BufferAttribute(vertices,3));
+      geometry.computeVertexNormals();
+      const mesh=new T.InstancedMesh(geometry,
+        new T.MeshStandardMaterial({color:palettes[biome],side:T.DoubleSide,roughness:.9,emissive:palettes[biome],emissiveIntensity:.08}),data.length);
       mesh.userData.ownedMaterial=true;
       const dummy=new T.Object3D();
       data.forEach((plant,i)=>{
-        dummy.position.set(plant.x+.5,plant.y+height*plant.scale*.5,plant.z+.5);
+        dummy.position.set(plant.x+.5,plant.y,plant.z+.5);
         dummy.rotation.y=randomAt(world.number+93,plant.x,plant.z)*6.28;
         dummy.scale.setScalar(plant.scale);dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix);
       });
       mesh.instanceMatrix.needsUpdate=true;mesh.frustumCulled=false;
-      this.decor.add(mesh);this.plants.push({mesh,data,height});
+      this.decor.add(mesh);this.plants.push({mesh,data});
     }
     const vertices=[];
     for(let side=0;side<4;side++) for(let n=-HALF;n<HALF;n+=3) {
@@ -344,17 +394,17 @@ export class View {
     }
     const geometry=new T.BufferGeometry();
     geometry.setAttribute('position',new T.Float32BufferAttribute(vertices,3));
-    const rim=new T.Mesh(geometry,new T.MeshBasicMaterial({color:'#293f43',side:T.DoubleSide,fog:true}));
+    const rim=new T.Mesh(geometry,new T.MeshBasicMaterial({color:'#34494d',side:T.DoubleSide,fog:true}));
     rim.userData.ownedMaterial=true;this.decor.add(rim);
   }
 
   updatePlants(x,z) {
-    for(const {mesh,data,height} of this.plants) {
+    for(const {mesh,data} of this.plants) {
       const i=data.findIndex(p=>p.x===x && p.z===z);
       if(i<0) continue;
       const plant=data[i],dummy=new T.Object3D();
       const visible=surface(this.world,x,z)===plant.y && this.world.get(x,plant.y-1,z);
-      dummy.position.set(x+.5,plant.y+height*plant.scale*.5,z+.5);
+      dummy.position.set(x+.5,plant.y,z+.5);
       dummy.scale.setScalar(visible?plant.scale:0);
       dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix);mesh.instanceMatrix.needsUpdate=true;
     }
@@ -438,7 +488,7 @@ export class View {
     return this.mobs.some(m=>m.x>x-.32 && m.x<x+1.32 && m.z>z-.32 && m.z<z+1.32 && m.y<y+1 && m.y+1.55>y);
   }
 
-  creatures(dt,p,t,low,damage,warning,reduced) {
+  creatures(dt,p,t,low,damage,warning,reduced,peaceful=false) {
     let danger=0;
     for(const m of this.mobs) {
       const dx=p.x-m.x,dz=p.z-m.z,dist=Math.hypot(dx,dz);
@@ -446,7 +496,7 @@ export class View {
       const vertical=Math.abs(p.y-m.y);
       m.cool=Math.max(0,m.cool-dt);m.flee=Math.max(0,m.flee-dt);
       const lit=m.kind==='rasp' && (wardCovers(this.ward,t,m) || (dist<reach && nearbyLanterns(this.world,m,3.3,1).length>0));
-      const active=m.kind==='rasp' && !m.flee && !lit && dist<reach && vertical<2.2;
+      const active=!peaceful && m.kind==='rasp' && !m.flee && !lit && dist<reach && vertical<2.2;
       const canStrike=active && dist<1.45 && vertical<1.3 && m.cool===0 &&
         !trace(this.world,[m.x,m.y+1,m.z],[dx/(dist||1),(p.y-m.y)/(dist||1),dz/(dist||1)],Math.max(0,dist-.25));
       if(!canStrike) m.charge=0;

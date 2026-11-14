@@ -24,7 +24,7 @@ export const RECIPES = [
   { id:'ward', count:1, costs:{8:1,5:2}, note:'F · Protección temporal alrededor del punto de uso.' }
 ];
 export const DEFAULT_SETTINGS={music:58, effects:68, sensitivity:50, padSensitivity:50, deadzone:20, view:3, mute:false, reduced:false, resolution:'auto'};
-export const SAVE_VERSION=4;
+export const SAVE_VERSION=5;
 export const MAX_STACK=999;
 export const SLOTS=8;
 export const SAVE_KEY='marea-hueca:slot:v1';
@@ -33,16 +33,17 @@ export const EYE=1.62;
 export const PLAYER_HEIGHT=1.8;
 const R=.28;
 
-export function newState(world) {
+export function newState(world,mode='survival') {
   const y=surface(world,0,7);
   return {
     player:{x:.5,y:y+.02,z:7.5,vx:0,vy:0,vz:0,ground:false,yaw:0,pitch:-.035,health:100},
-    bag:{1:4,4:2,moss:2}, bar:['1','4',null,null,null,null,null,'moss'], selected:0,
+    mode, bag:mode==='free'?{...Object.fromEntries(Array.from({length:8},(_,i)=>[i+1,999])),chisel:1,hook:1,moss:999,needle:1,saltlance:1,ward:999}:{1:4,4:2,moss:2}, bar:mode==='free'?['1','2','3','4','5','6','7','8']:['1','4',null,null,null,null,null,'moss'], selected:0,
     echoes:[], discoveries:[], finished:false, elapsed:0, deaths:0, needleReady:0, ward:null
   };
 }
 
 export function gain(state,id,count=1) {
+  if (state.mode==='free') return true;
   if (!Object.hasOwn(ITEMS,id) || (state.bag[id]??0)+count>MAX_STACK || count<1) return false;
   state.bag[id]=(state.bag[id]??0)+count;
   if (!state.bar.includes(String(id))) {
@@ -53,6 +54,7 @@ export function gain(state,id,count=1) {
 }
 
 export function use(state,id,count=1) {
+  if (state.mode==='free') return true;
   if ((state.bag[id]??0)<count) return false;
   state.bag[id]-=count;
   if (!state.bag[id]) delete state.bag[id];
@@ -60,12 +62,13 @@ export function use(state,id,count=1) {
 }
 
 export function canCraft(state,recipe) {
-  return !!recipe && (state.bag[recipe.id]??0)+recipe.count<=MAX_STACK &&
-    Object.entries(recipe.costs).every(([id,n])=>(state.bag[id]??0)>=n);
+  return !!recipe && (state.mode==='free' || ((state.bag[recipe.id]??0)+recipe.count<=MAX_STACK &&
+    Object.entries(recipe.costs).every(([id,n])=>(state.bag[id]??0)>=n)));
 }
 
 export function craft(state,recipe) {
   if (!canCraft(state,recipe)) return false;
+  if (state.mode==='free') { state.bag[recipe.id]=Math.max(state.bag[recipe.id]??0,1); return equip(state,recipe.id); }
   for (const [id,n] of Object.entries(recipe.costs)) use(state,id,n);
   return gain(state,recipe.id,recipe.count);
 }
@@ -158,7 +161,7 @@ export function miningTime(id,tool) {
 }
 
 export function mine(world,state,hit) {
-  if (!hit || hit.block===9 || world.get(...hit.cell)!==hit.block || (state.bag[hit.block]??0)>=MAX_STACK) return false;
+  if (!hit || hit.block===9 || world.get(...hit.cell)!==hit.block || (state.mode!=='free' && (state.bag[hit.block]??0)>=MAX_STACK)) return false;
   return world.set(...hit.cell,0) && gain(state,hit.block);
 }
 
@@ -225,7 +228,7 @@ export function encode(world,state,settings) {
   const {x,y,z,yaw,pitch,health}=state.player;
   return JSON.stringify({version:SAVE_VERSION, seed:world.seed, position:[x,y,z,yaw,pitch], health,
     inventory:state.bag, bar:state.bar, selected:state.selected, echoes:state.echoes, discoveries:state.discoveries, finished:state.finished,
-    elapsed:state.elapsed, deaths:state.deaths, layout:world.layout, needleReady:state.needleReady, ward:state.ward, edits:[...world.edits], settings});
+    elapsed:state.elapsed, deaths:state.deaths, mode:state.mode, layout:world.layout, needleReady:state.needleReady, ward:state.ward, edits:[...world.edits], settings});
 }
 
 export function decode(raw) {
@@ -233,7 +236,7 @@ export function decode(raw) {
   let data;
   try { data=JSON.parse(raw); } catch { throw new Error('La partida no contiene JSON válido.'); }
   const d=data;
-  if (![1,2,3,SAVE_VERSION].includes(d?.version)) throw new Error('La versión de la partida no es compatible.');
+  if (![1,2,3,4,SAVE_VERSION].includes(d?.version)) throw new Error('La versión de la partida no es compatible.');
   const fail=()=>{throw new Error('La partida contiene datos inválidos.');};
   if (typeof d.seed!=='string' || !d.seed.trim() || d.seed.length>64 || !Array.isArray(d.position) ||
       d.position.length!==5 || !d.position.every(Number.isFinite) || Math.abs(d.position[0])>=HALF ||
@@ -241,6 +244,8 @@ export function decode(raw) {
       Math.abs(d.position[3])>Math.PI*2 || Math.abs(d.position[4])>Math.PI/2 ||
       !Number.isFinite(d.health) || d.health<0 || d.health>100 || !d.inventory ||
       typeof d.inventory!=='object' || Array.isArray(d.inventory)) fail();
+  const mode=d.version===SAVE_VERSION?d.mode:'survival';
+  if(!['survival','free'].includes(mode)) fail();
   const discoveries=d.version===1?[]:d.discoveries;
   const discoverySites=d.version>=3?[...SITES,...(d.version===3?SETTLEMENTS.slice(0,2):SETTLEMENTS)]:SITES;
   if (!Array.isArray(discoveries) || discoveries.length>discoverySites.length ||
@@ -264,7 +269,7 @@ export function decode(raw) {
       (ward!==null && (!ward || ![ward.x,ward.y,ward.z,ward.until].every(Number.isFinite) ||
       Math.abs(ward.x)>=HALF || Math.abs(ward.z)>=HALF || ward.y<0 || ward.y>=HEIGHT ||
       ward.until<0 || ward.until>d.elapsed+14))) fail();
-  const world=new World(d.seed,layout), state=newState(world);
+  const world=new World(d.seed,layout), state=newState(world,mode);
   state.bag={};
   for (const [id,n] of Object.entries(d.inventory)) {
     if (!Object.hasOwn(ITEMS,id) || !Number.isInteger(n) || n<1 || n>MAX_STACK) fail();
@@ -292,6 +297,7 @@ export function decode(raw) {
   Object.assign(state,{bar:d.bar,selected:d.selected,echoes:d.echoes,discoveries,finished:d.finished,elapsed:d.elapsed,deaths:d.deaths,needleReady,ward});
   const [x,y,z,yaw,pitch]=d.position;
   Object.assign(state.player,{x,y,z,yaw,pitch,health:d.health});
+  if (mode==='free') state.player.health=100;
   if (collides(world,x,y,z) || d.health===0) recover(world,state);
   return {world,state,settings:safeSettings(d.settings)};
 }

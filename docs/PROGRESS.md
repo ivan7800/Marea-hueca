@@ -68,3 +68,10 @@ Para repetir la verificación ejecuta `npm ci`, `npm test`, `npm run build` y `n
 - Integrada la API Gamepad con asignación estándar, movimiento analógico y los mismos efectos de juego que teclado y ratón. La sesión iniciada con mando no solicita capturar el cursor. La navegación utiliza los controles de interfaz existentes.
 - Conservado el formato de guardado v4. Los ajustes nuevos tienen valores por defecto en partidas anteriores. La 0.6.0 solo ofrecía las reglas de supervivencia. El modo Libre pertenece a otra actualización.
 - La información de rumbo inicial ahora está disponible con cualquier control y el aviso de proximidad de la raspadura describe el peligro en pantalla.
+
+## 0.7.0 · Modos y Fosa del Testigo
+
+- Referencia: main fba2036 (0.6.1). 18 pruebas y ambas compilaciones correctas antes de editar.
+- Modo Libre elegido al crear mundo, con material ilimitado, recetas sin coste, salud protegida y criaturas no agresivas. Guardado v5 con lectura de v1–v4 en Supervivencia. Se preservan ediciones, posición, inventario y progresión.
+- Tres familias vegetales diseñadas con triángulos e instancias por bioma. Se despejan accesos a asentamientos y hallazgos. Fosa del Testigo como expedición opcional y lugar de aprovisionamiento. Se aclara la luz ambiental.
+- Sigue pendiente la prueba de rendimiento y mando en hardware físico, además de una escucha real.

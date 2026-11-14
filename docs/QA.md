@@ -1,4 +1,4 @@
-# QA · La Marea Hueca 0.1.0
+# QA · La Marea Hueca 0.7.0
 
 ## Base
 
@@ -10,13 +10,13 @@
 
 - La vista compartida de Chrome muestra el menú y el formulario de semilla. Intentar iniciar el mundo en esa vista devuelve WebGL 2 deshabilitado por el entorno.
 - La prueba de escritorio usa Chromium headless 141.0.7390.0, Linux, 1280 × 720 CSS, SwiftShader y CPU Intel Xeon Platinum 8573C virtualizada. WebGL 2 está disponible mediante la implementación por software.
-- Quedan pendientes Safari, Firefox, GPU física, mando, móvil físico y una prueba de escucha de la mezcla en altavoces o auriculares. El juego no ofrece controles táctiles.
+- Quedan pendientes Safari, Firefox, GPU física, mando físico, móvil físico y una prueba de escucha de la mezcla en altavoces o auriculares. El mando estándar se ensayó con entradas simuladas. El juego no ofrece controles táctiles.
 
 ## Alcance del mundo y límites
 
 La cuenca tiene 36 chunks de base como máximo y ocho criaturas. Se construyen caras expuestas y se regeneran los vecinos cuando una edición toca un borde. Se priorizan nueve chunks iniciales y el resto se carga de uno en uno. Las ediciones se limitan a 40.000. La persistencia usa una ranura y exportación JSON. Cambiar de ruta en la edición autónoma puede cambiar el ámbito del guardado.
 
-El flujo de Pages está incluido y requiere un repositorio nuevo con permisos de escritura y GitHub Actions habilitado como origen. No se ha desplegado a GitHub.
+GitHub Pages despliega desde main mediante su flujo de Actions. La versión 0.7.0 se verifica por separado antes de publicarla.
 
 La ejecución independiente de la edición autónoma abrió una partida desde `file://` con red desactivada, WebGL 2 operativo y guardado local disponible. La emulación táctil de iPhone 13 en Chromium verificó el menú y los ajustes a 390 × 664 CSS (DPR 3).
 
@@ -83,3 +83,12 @@ El recorrido de aceptación utilizó I/J/K/L, M y N para cámara, extracción y 
 - Pendientes un mando físico, otros navegadores y una escucha real. Un navegador puede exigir un clic o una tecla para desbloquear el audio al iniciar con mando. La versión base ofrece supervivencia. No se pudo comprobar un modo Libre porque aún no existe.
 - Recorrido en escritorio a 1280 × 720: los tres biomas, ambos ecos y Cámara Sorda, extracción, construcción, fabricación, pausa, ajustes de audio, guardado, recarga, exportación, importación y rechazo de JSON corrupto. Sin errores de aplicación ni WebGL durante ese recorrido. La prueba de interfaz pasó su tramo de escritorio. Chromium en modo de proceso único se cerró al crear un segundo contexto en ambas suites. Se verificaron por separado el menú y Ajustes en emulación iPhone 13 (390 px) y el arranque con guardado en el HTML autónomo, con red desactivada.
 - Prueba de asentamientos a 800 × 500: entradas y suministros de Boyas, Costillas y Aljibe, aguja, lanza, fabricación y umbral, con recarga. Las mediciones fijas con SwiftShader registraron 31,4 FPS en Costra y 10,4 en Salina durante el recorrido de escritorio, con calidad baja y nueve chunks. La carga del entorno varió durante la toma. Estos datos no miden una GPU física ni establecen una comparación antes y después.
+
+## 0.7.0 · Modos y atmósfera
+
+- 21 pruebas de Node verifican los sistemas y las nuevas reglas Libre, migración v4, rechazo de modo inválido y recompensa irrepetible de la Fosa del Testigo. Compilaciones web y autónoma correctas.
+- La revisión de 0.6.1 encontró vegetación representada por un cono triangular por bioma y ausencia de Modo Libre. Se reemplazaron esas tres formas por abanicos, tallos y láminas. Quedan pendientes escucha en auriculares, mando físico y GPU real.
+- Chromium Headless Shell 141.0.7390.37 en Linux virtualizado, 1280 × 720 CSS, SwiftShader, semilla MAREA-17, calidad baja y nueve chunks. Recorrido de Supervivencia con teclado y botones: tres biomas, ambos ecos, Cámara Sorda, extracción, construcción, fabricación, guardado, recarga, importación y corrupción. No se registraron errores de aplicación ni WebGL. La fase posterior de abrir un segundo contexto del mismo proceso cerró Chromium, como ya ocurrió en 0.6.1.
+- Prueba separada de Libre: selección desde el menú, colocación y minería sin gastar ni acumular bloques, receta, guardado y recarga con el modo y las ediciones intactos. Fosa del Testigo: aproximación caminando y saltando desde el sur, hallazgo irrepetible y recarga. La primera aproximación sin saltar topó con un escalón de terreno de un bloque en X 5, Z −37; la ruta se completó usando salto. La construcción del jugador sigue sin sufrir efectos del hallazgo.
+- Capturas de portada, Costra, minería, construcción, mochila, pausa, recarga, Espinazo, Salina, Cámara Sorda, Libre y Fosa revisadas. La Fosa ocupa buena parte de la vista al estar cerca y sus piezas suspendidas no tienen colisión. Se revisaron Ajustes en emulación iPhone 13 a 390 CSS sin desbordamiento. El autónomo se abrió desde file:// sin red e inició Libre con WebGL 2.
+- Tomas fijas de aproximadamente 4,35 s con calidad baja y nueve chunks: Costra 28,5 FPS, 123 intervalos, p95 100,1 ms; Salina 22,3 FPS, 96 intervalos, p95 150,1 ms. Asentamientos (800 × 500 CSS): Boyas 22,4, Costillas 38,0 y Aljibe 39,2 FPS. Son mediciones de SwiftShader en un host con carga variable y no permiten atribuir diferencias con 0.6.1 al cambio de arte. No se han probado GPU física, mando físico ni mezcla audible.

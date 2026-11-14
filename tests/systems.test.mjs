@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { World, WIDTH, HALF, HEIGHT, LANDMARKS, affectedChunks, biomeAt, surface, landmarkPosition } from '../src/world.js';
 import { trace, stepPlayer, collides, newState, mine, place, craft, canCraft, select, equip, gain, recover,
-  miningTime, encode, decode, RECIPES, DEFAULT_SETTINGS, SAVE_KEY, advanceEcho, forecast } from '../src/systems.js';
+  miningTime, encode, decode, RECIPES, DEFAULT_SETTINGS, SAVE_VERSION, SAVE_KEY, advanceEcho, forecast } from '../src/systems.js';
 import { meshChunk } from '../src/mesh.js';
 
 test('Una semilla reproduce chunks incluso en distinto orden y otra altera el terreno',()=>{
@@ -221,4 +221,45 @@ test('Migrar v3 conserva emplazamientos y construcciones y evita la huella ocupa
   assert.deepEqual(loaded.state.player,s.player);
   assert.deepEqual(decode(encode(loaded.world,loaded.state,loaded.settings)).world.layout,[1,2,1]);
   assert.throws(()=>decode(JSON.stringify({...old,layout:[1,2,1]})));
+});
+
+test('Modo Libre conserva construcciones sin consumir bloques ni sufrir daño al guardar',()=>{
+  const world=new World('LIBRE-17'), state=newState(world,'free');
+  const before=state.bag['1'];
+  const p=state.player;
+  const hit={cell:[0,Math.floor(p.y)-1,8],normal:[0,1,0],block:1};
+  const placed=place(world,state,hit,'1');
+  assert.ok(placed);
+  assert.equal(state.bag['1'],before);
+  const mined=mine(world,state,{cell:placed,block:1});
+  assert.equal(mined,true);
+  assert.equal(state.bag['1'],before);
+  assert.equal(canCraft(state,RECIPES[0]),true);
+  assert.equal(craft(state,RECIPES[0]),true);
+  const restored=decode(encode(world,state,DEFAULT_SETTINGS));
+  assert.equal(restored.state.mode,'free');
+  assert.equal(restored.state.bag['1'],before);
+  assert.deepEqual([...restored.world.edits],[...world.edits]);
+});
+
+test('La versión 4 abre como Supervivencia y el modo del archivo se valida',()=>{
+  const world=new World('ANTIGUA-17'),state=newState(world);
+  const old=JSON.parse(encode(world,state,DEFAULT_SETTINGS));
+  old.version=4;
+  delete old.mode;
+  assert.equal(decode(JSON.stringify(old)).state.mode,'survival');
+  old.version=SAVE_VERSION;
+  old.mode='invalid';
+  assert.throws(()=>decode(JSON.stringify(old)),/inválidos/);
+});
+
+test('La Fosa del Testigo se descubre una sola vez en ambos modos',async()=>{
+  const {SITES,discover}=await import('../src/expeditions.js');
+  const site=SITES.find(s=>s.id==='witness');
+  for(const mode of ['survival','free']) {
+    const state=newState(new World('TESTIGO-17'),mode);
+    assert.equal(discover(state,site,gain),true);
+    assert.equal(discover(state,site,gain),false);
+    assert.deepEqual(decode(encode(new World('TESTIGO-17'),state,DEFAULT_SETTINGS)).state.discoveries,['witness']);
+  }
 });

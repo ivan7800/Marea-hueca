@@ -5,6 +5,8 @@ export const SITES = [
     line:'Las redes siguen tendidas hacia el cielo. En el nudo central queda limo húmedo.'},
   {id:'rib', title:'El peine de las nueve costillas', x:-36,z:0,color:'#abc4f6',reward:{6:2,3:3},
     line:'Las costillas señalan un cauce que ya no existe. Queda nácar entre los dientes.'},
+  {id:'witness',title:'La Fosa del Testigo',x:5,z:-40,color:'#d6cdbb',reward:{6:3,8:2},
+    line:'Bajo la costra hay una forma que no cabe en el mapa. La fosa responde con una vibración; tus bloques permanecen intactos.'},
   {id:'pool',title:'El cuenco de sal',x:37,z:20,color:'#eea6c7',reward:{7:3,5:2},
     line:'La concha retiene una huella que parece cambiar de tamaño al rodearla.'}
 ];
@@ -25,7 +27,7 @@ export function nearbySite(world,p) {
 
 export function discover(state,site,gain) {
   if(state.discoveries.includes(site.id)) return false;
-  if(Object.entries(site.reward).some(([id,n])=>(state.bag[id]??0)+n>999)) return false;
+  if(state.mode!=='free' && Object.entries(site.reward).some(([id,n])=>(state.bag[id]??0)+n>999)) return false;
   for(const [id,n] of Object.entries(site.reward)) gain(state,id,n);
   state.discoveries.push(site.id);
   return true;

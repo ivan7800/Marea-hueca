@@ -162,7 +162,7 @@ try {
   assert.equal((await read()).locked,null);
   await resume();
   await page.keyboard.press('c');
-  await page.getByText('0/3 hallazgos.',{exact:false}).waitFor();
+  await page.getByText('0/4 hallazgos.',{exact:false}).waitFor();
   await snap('14-cuaderno');
   await resume();
   await walk(.5,.5);

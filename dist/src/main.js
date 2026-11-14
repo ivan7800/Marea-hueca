@@ -85,7 +85,7 @@ function show(name) {
   if(mode==='play') {mode='pause';stop();sound.update(settings,false);document.exitPointerLock?.();}
   panel.setAttribute('aria-labelledby','panel-title');
   const templates={
-    new:()=> `<form class="form-grid" id="seed-form"><label for="seed">Semilla del mundo</label><input type="text" id="seed" maxlength="64" required value="${DEFAULT_SEED}" spellcheck="false" autocomplete="off"><p>La misma semilla reconstruye el mismo terreno. ${disk()?'Ya hay una partida en esta ranura. Puedes descargarla antes de sustituirla.':'Empiezas en La Costra, frente al observatorio.'}</p>${disk()?'<label class="check"><input id="replace-save" type="checkbox" required> Sustituir la partida local</label>':''}<div class="panel-actions"><button type="submit" class="primary">Entrar en la cuenca</button><button data-action="random" type="button">Otra semilla</button>${disk()?'<button data-action="export" type="button">Exportar partida actual</button>':''}</div></form><p class="message"></p>`,
+    new:()=> `<form class="form-grid" id="seed-form"><label for="seed">Semilla del mundo</label><input type="text" id="seed" maxlength="64" required value="${DEFAULT_SEED}" spellcheck="false" autocomplete="off"><label for="game-mode">Modo de juego</label><select id="game-mode"><option value="survival">Supervivencia · recursos y salud</option><option value="free">Libre · construir sin gastar ni recibir daño</option></select><p>La misma semilla reconstruye el mismo terreno. ${disk()?'Ya hay una partida en esta ranura. Puedes descargarla antes de sustituirla.':'Empiezas en La Costra, frente al observatorio.'}</p>${disk()?'<label class="check"><input id="replace-save" type="checkbox" required> Sustituir la partida local</label>':''}<div class="panel-actions"><button type="submit" class="primary">Entrar en la cuenca</button><button data-action="random" type="button">Otra semilla</button>${disk()?'<button data-action="export" type="button">Exportar partida actual</button>':''}</div></form><p class="message"></p>`,
     pause:()=> `<p>${pausedMessage || 'La cuenca se detiene mientras estás en pausa.'}</p><p class="panel-hint">El regreso al menú guarda el mundo. Exporta una copia si quieres trasladarlo.</p>${buttons(['resume','Reanudar',true],['save','Guardar'],['inventory','Mochila'],['journal','Cuaderno'],['settings','Ajustes'],['guide','Controles'],['export','Exportar partida'],['menu','Volver al menú'])}<p class="message" aria-live="polite"></p>`,
     resume:()=> `<p>Usa el ratón o I J K L para mirar. Puedes minar con M y colocar con N. Escape libera el cursor. Con mando, pulsa Menú para entrar sin capturarlo.</p>${buttons(['resume','Capturar cursor',true],['menu','Volver al menú'])}<p class="message" aria-live="polite"></p>`,
     defeat:()=> `<p>Regresarás junto al observatorio con la mochila y tus construcciones. El mundo conserva tu recorrido.</p>${buttons(['recover','Regresar a La Costra',true])}`,
@@ -103,7 +103,7 @@ function show(name) {
     },
     settings:()=> `<div class="form-grid"><h3>Escucha y mirada</h3>${[['music','Música'],['effects','Efectos'],['sensitivity','Sensibilidad del ratón'],['padSensitivity','Sensibilidad del mando'],['deadzone','Zona muerta del mando (%)']].map(([k,n])=>`<label class="setting">${n}<input data-setting="${k}" type="range" min="${k==='deadzone'?10:0}" max="${k==='deadzone'?40:100}" value="${settings[k]}"></label>`).join('')}<h3>Imagen y comodidad</h3><label class="setting">Distancia de visión<select data-setting="view">${[[2,'Corta'],[3,'Normal'],[4,'Larga']].map(([n,w])=>`<option value="${n}"${settings.view===n?' selected':''}>${w}</option>`).join('')}</select></label><label class="setting">Resolución 3D<select data-setting="resolution">${[['low','Baja'],['auto','Normal'],['high','Alta']].map(([n,w])=>`<option value="${n}"${settings.resolution===n?' selected':''}>${w}</option>`).join('')}</select></label><label class="check"><input data-setting="mute" type="checkbox"${settings.mute?' checked':''}> Silencio total</label><label class="check"><input data-setting="reduced" type="checkbox"${settings.reduced?' checked':''}> Reducir movimiento y efectos</label></div>${buttons(['back','Volver',true])}`,
     guide:()=> `<p>Construye a tu ritmo. Los ecos y los asentamientos son descubrimientos opcionales.</p><div class="control-grid"><div><kbd>W A S D</kbd><span>Moverse</span></div><div><kbd>ESPACIO</kbd><span>Saltar</span></div><div><kbd>RATÓN / I J K L</kbd><span>Mirar</span></div><div><kbd>IZQ / M</kbd><span>Extraer</span></div><div><kbd>DER / N</kbd><span>Colocar</span></div><div><kbd>F</kbd><span>Usar o escuchar</span></div><div><kbd>1–8 / RUEDA</kbd><span>Elegir casilla</span></div><div><kbd>E / C</kbd><span>Mochila / cuaderno</span></div><div><kbd>ESC / P</kbd><span>Pausa y cursor</span></div></div><p class="panel-hint">Música, efectos, sensibilidad y movimiento reducido se ajustan en Ajustes.</p><h3>Mando con mapa estándar</h3><p>Palanca izquierda: mover. Derecha: mirar. A: saltar. RT: extraer. LT: colocar. X: usar. Y: mochila. LB/RB: barra rápida. Pulsar palanca izquierda: correr. Vista: cuaderno. Menú: pausa.</p><p>En los menús, usa la cruceta o la palanca izquierda para recorrer los controles, A para aceptar y B para volver. Usa teclado para escribir una semilla.</p>${buttons(['back','Volver',true])}`,
-    inventory:()=> `<p>Pulsa un objeto para ponerlo en la casilla rápida ${state.selected+1}. Selecciona casilla con 1–8 o la rueda durante la partida.</p><div class="inventory">${Object.entries(state.bag).map(([id,n])=>`<button data-equip="${id}">${chip(id)}<span>${ITEMS[id].name} · ${n}${ITEMS[id].note?`<small>${ITEMS[id].note}</small>`:''}</span></button>`).join('') || '<span>Mochila vacía.</span>'}</div><h3>Fabricación</h3><div class="recipes">${RECIPES.map((r,i)=>`<div class="recipe"><div><strong>${ITEMS[r.id].name}${r.count>1?` × ${r.count}`:''}</strong><small>${r.note}<br>${Object.entries(r.costs).map(([id,n])=>`${ITEMS[id].name} ${state.bag[id]??0}/${n}`).join(' · ')}</small></div><button data-recipe="${i}"${canCraft(state,r)?'':' disabled'}>Fabricar</button></div>`).join('')}</div>${buttons(['resume','Reanudar',true],['pause','Pausa'])}<p class="message" aria-live="polite"></p>`,
+    inventory:()=> `<p>${state.mode==='free'?'Modo Libre · bloques ilimitados. Elige cualquiera para tu barra rápida.':'Modo Supervivencia · reúne materiales y fabrica herramientas.'}</p><p>Pulsa un objeto para ponerlo en la casilla rápida ${state.selected+1}. Selecciona casilla con 1–8 o la rueda durante la partida.</p><div class="inventory">${Object.entries(state.bag).map(([id,n])=>`<button data-equip="${id}">${chip(id)}<span>${ITEMS[id].name} · ${n}${ITEMS[id].note?`<small>${ITEMS[id].note}</small>`:''}</span></button>`).join('') || '<span>Mochila vacía.</span>'}</div><h3>Fabricación</h3><div class="recipes">${RECIPES.map((r,i)=>`<div class="recipe"><div><strong>${ITEMS[r.id].name}${r.count>1?` × ${r.count}`:''}</strong><small>${r.note}<br>${Object.entries(r.costs).map(([id,n])=>`${ITEMS[id].name} ${state.bag[id]??0}/${n}`).join(' · ')}</small></div><button data-recipe="${i}"${canCraft(state,r)?'':' disabled'}>Fabricar</button></div>`).join('')}</div>${buttons(['resume','Reanudar',true],['pause','Pausa'])}<p class="message" aria-live="polite"></p>`,
     credits:()=> `<p>Mundo, código, texturas, ilustración y sonido originales de <em>La Marea Hueca</em>. La música se sintetiza mientras juegas.</p><p>Three.js r180 · © Three.js Authors · licencia MIT incluida.</p><p><strong>Partidas locales</strong><br>Importa una copia JSON para trasladar tu mundo a otro navegador.</p><div class="panel-actions"><button data-action="import">Importar partida</button>${disk()?'<button data-action="export">Exportar partida</button>':''}<button data-action="back">Volver</button></div><input id="import-file" type="file" accept=".json,application/json" hidden><p class="message" aria-live="polite"></p>`
   };
   panel.innerHTML=body(name,templates[name]());
@@ -203,6 +203,7 @@ async function start(loaded,raw,entrance) {
     }
     ({world,state}=loaded);
     settings=loaded.settings;
+    $('game-mode-hud').textContent=state.mode==='free'?'MODO LIBRE':'SUPERVIVENCIA';
     syncMotion();
     $('save-state').textContent=raw?'Guardado local':'Sin guardar';
     currentRaw=raw;revision=0;writeFault=false;lastSave=state.elapsed;lastBiome=-1;lastLow=false;damagePulse=0;
@@ -244,7 +245,7 @@ function drawBar() {
   if(!state) return;
   $('bar').innerHTML=state.bar.map((id,i)=>{
     const filled=id && state.bag[id], label=filled?ITEMS[id].name:'Vacío';
-    return `<button class="slot${i===state.selected?' active':''}" data-slot="${i}" aria-label="${i+1}. ${label}" aria-pressed="${i===state.selected}" title="${label}"><span class="num">${i+1}</span>${filled?chip(id):''}<span class="qty">${filled && ITEMS[id].kind!=='tool'?state.bag[id]:''}</span></button>`;
+    return `<button class="slot${i===state.selected?' active':''}" data-slot="${i}" aria-label="${i+1}. ${label}" aria-pressed="${i===state.selected}" title="${label}"><span class="num">${i+1}</span>${filled?chip(id):''}<span class="qty">${filled && ITEMS[id].kind!=='tool'?state.mode==='free'?'∞':state.bag[id]:''}</span></button>`;
   }).join('');
   const id=activeItem();
   $('tool-name').textContent=id?ITEMS[id].name:'Manos libres';
@@ -265,7 +266,7 @@ function drawHUD(hit) {
   $('biome').textContent=b.name;$('biome-material').textContent=b.note;
   $('coords').textContent=`X ${Math.floor(p.x)}  ·  Z ${Math.floor(p.z)}  ·  Y ${Math.floor(p.y)}`;
   $('bearing').textContent=angle(p);$('tide').textContent=forecast(state.elapsed).low?'BAJAMAR':'MAREA QUIETA';
-  $('health').textContent=Math.ceil(p.health);$('healthbar').value=p.health;
+  $('health').textContent=state.mode==='free'?'∞':Math.ceil(p.health);$('health-max').textContent=state.mode==='free'?'':'/100';$('healthbar').value=p.health;
   $('target').textContent=hit?BLOCKS[hit.block].name:'';
   $('mining').hidden=!mining || !hit || mined<=0;
   if(hit) $('mining').value=Math.min(1,mined/miningTime(hit.block,activeItem()));
@@ -278,6 +279,7 @@ function drawHUD(hit) {
 }
 function damage(amount,text) {
   if(mode!=='play') return;
+  if(state.mode==='free') return;
   const p=state.player;
   p.health=Math.max(0,p.health-amount);damagePulse=settings.reduced?.23:.78;
   sound.event('hurt');notify(text,3.7,'danger');
@@ -490,7 +492,7 @@ function tick(now) {
   danger=view.creatures(dt,p,state.elapsed,tide.low,damage,charging=>{
     sound.event(charging?'charge':'creature');
     notify(charging?'La raspadura va a embestir.':'Hay una raspadura cerca.',3.7,'danger');
-  },settings.reduced);
+  },settings.reduced,state.mode==='free');
   if(mode!=='play') return;
   stepClock+=dt;
   if(moving && p.ground && stepClock>(sprint?.29:.42)) {
@@ -551,12 +553,12 @@ panel.addEventListener('submit',event=>{
   const seed=$('seed').value.trim();
   if(!seed) {message('Escribe una semilla con al menos un carácter.');return;}
   if(disk()!==seenAtCreation) {
-    show('new');$('seed').value=seed;
+    const chosen=$('game-mode').value;show('new');$('seed').value=seed;$('game-mode').value=chosen;
     message('Otra pestaña cambió la partida. Revisa la ranura antes de sustituirla.');
     return;
   }
   const newWorld=new World(seed);
-  start({world:newWorld,state:newState(newWorld),settings},seenAtCreation,true);
+  start({world:newWorld,state:newState(newWorld,$('game-mode').value),settings},seenAtCreation,true);
 });
 panel.addEventListener('click',event=>{
   const target=event.target.closest('button');
@@ -697,7 +699,7 @@ if(qa) {
   window.mareaQA=Object.freeze({
     state:()=>state?{mode,player:{...state.player},seed:world.seed,bag:{...state.bag},revision,
       edits:[...world.edits],discoveries:[...state.discoveries],echoes:[...state.echoes],finished:state.finished,biome:currentBiome(state.player),
-      activeItem:activeItem(),ward:state.ward,needleReady:state.needleReady,elapsed:state.elapsed,deaths:state.deaths,selected:state.selected,
+      gameMode:state.mode,activeItem:activeItem(),ward:state.ward,needleReady:state.needleReady,elapsed:state.elapsed,deaths:state.deaths,selected:state.selected,
       chunks:view.meshes.size,todo:view.queue.length,locked:document.pointerLockElement?.id??null,
       target:blockHit(),saved:!!disk(),renderer:view.renderer.getContext().getParameter(view.renderer.getContext().VERSION),
       glError:view.renderer.getContext().getError(), calls:view.renderer.info.render.calls,

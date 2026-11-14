@@ -32,11 +32,11 @@
       <p id="mobile-note">Para jugar, usa un equipo con teclado y ratón.</p>
     </div>
     <div class="chart-note"><i></i><div><b>01 / LA COSTRA</b><span>Donde el fondo aún recuerda</span></div></div>
-    <footer class="front-footer"><span><i></i> JUEGO LOCAL</span><span>PC · TECLADO, RATÓN O MANDO</span><span>V. 0.6.1</span></footer>
+    <footer class="front-footer"><span><i></i> JUEGO LOCAL</span><span>PC · TECLADO, RATÓN O MANDO</span><span>V. 0.7.0</span></footer>
   </main>
   <div id="hud" hidden>
     <div class="hud-top">
-      <section class="location" aria-label="Ubicación"><small id="biome-material"></small><strong id="biome"></strong><span id="coords"></span></section>
+      <section class="location" aria-label="Ubicación"><small id="biome-material"></small><strong id="biome"></strong><span id="coords"></span><small id="game-mode-hud"></small></section>
       <div class="heading" aria-label="Brújula"><span id="bearing"></span><i></i><small id="tide"></small></div>
       <button id="pause" class="hud-pause" title="Pausa con Escape" aria-label="Pausa">Ⅱ</button>
     </div>
@@ -48,7 +48,7 @@
     <div id="prompt"></div>
     <div id="notice" role="status" aria-live="polite"></div>
     <div class="hud-bottom">
-      <div class="quick-status"><span class="equipped"><small>EN MANO</small><span id="tool-name"></span><small id="save-state" role="status"></small></span><span class="health"><b aria-hidden="true">✚</b><span class="health-copy">SALUD <strong id="health"></strong>/100</span><progress id="healthbar" max="100" aria-label="Salud"></progress></span></div>
+      <div class="quick-status"><span class="equipped"><small>EN MANO</small><span id="tool-name"></span><small id="save-state" role="status"></small></span><span class="health"><b aria-hidden="true">✚</b><span class="health-copy">SALUD <strong id="health"></strong><span id="health-max">/100</span></span><progress id="healthbar" max="100" aria-label="Salud"></progress></span></div>
       <div id="bar" aria-label="Barra rápida"></div>
       <div class="quick-help" id="quick-help"><span><kbd>WASD</kbd> Mover</span><span><kbd>ESP</kbd> Saltar</span><span><kbd>IZQ</kbd> Minar</span><span><kbd>DER</kbd> Colocar</span><span><kbd>E</kbd> Mochila</span><span><kbd>C</kbd> Cuaderno</span><span><kbd>F</kbd> Usar</span><span><kbd>ESC</kbd> Pausa</span></div>
     </div>

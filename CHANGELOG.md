@@ -1,5 +1,12 @@
 # Cambios
 
+## 0.7.0
+
+- Dos modos al crear mundo: Supervivencia y Libre. En Libre puedes usar materiales sin gastarlos y las criaturas no embisten. El modo persiste en el guardado v5; las partidas anteriores se abren en Supervivencia.
+- Plantas geométricas propias por bioma: haces de junco, abanicos de basalto y láminas salinas, instanciadas por semilla y fuera de las rutas y estructuras. Luz ambiental más clara.
+- Fosa del Testigo al norte del observatorio: forma hueca suspendida, hallazgo y suministros únicos opcionales.
+- Objetivo de inicio más visible y cuaderno ampliado. Interfaz de mochila indica las reglas del mundo.
+
 ## 0.6.1
 
 - Controles analógicos con la API Gamepad y asignación estándar. Se puede recorrer la portada, pausar, usar la mochila y volver a la partida con mando.

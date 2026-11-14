@@ -1,4 +1,4 @@
-# La Marea Hueca · 0.6.1
+# La Marea Hueca · 0.7.0
 
 Sandbox voxel de exploración, construcción y supervivencia con horror cósmico. El mar se retiró de una cuenca que conserva voces bajo la piedra. Puedes excavar, construir tu refugio o salir en busca de dos ecos y llevarlos al recinto enterrado bajo el observatorio.
 
@@ -27,6 +27,10 @@ Abre `http://127.0.0.1:4173/`. El proceso sirve archivos estáticos. El juego no
 | Cuaderno de campo | C |
 | Pausa y cursor | Esc o P |
 
+## Modos
+
+Al crear un mundo, elige **Supervivencia** (reunir recursos, fabricar, gestionar salud) o **Libre** (todos los materiales y herramientas disponibles, bloques ilimitados y criaturas sin agresión). La selección queda fija para ese mundo y se conserva al exportarlo. Las partidas anteriores se abren en Supervivencia. El mundo sigue teniendo un solo espacio de guardado local. Exporta la partida previa antes de iniciar otra.
+
 ## Primer recorrido
 
 - En La Costra puedes colocar bloques desde el principio y fabricar el Escoplo de veta con la mochila inicial. El junco se reconoce por sus fibras verticales. Cada recurso extraído va directo a la mochila.
@@ -43,6 +47,10 @@ Los tres hallazgos del cuaderno son opcionales. Examínalos con F y usa sus mate
 - **Aljibe de las Agujas · La Salina Ciega.** Cruza el arco entre dos pilares desiguales. Tras el arco hay una cisterna abierta con suministros de sal, concha y un fanal.
 - Entra y pulsa **F** junto al armario marcado con un diamante. Las coordenadas de tu mundo están en el cuaderno (**C**). Si todas las huellas candidatas de un asentamiento están ocupadas por ediciones antiguas, ese asentamiento se omite para preservar la partida.
 - Equipa el objeto en la mochila (**E**). La **Aguja** indica rumbo y distancia al hallazgo pendiente más cercano, con 8 segundos de recarga. La **Lanza** ahuyenta raspaduras visibles a un máximo de 5 bloques y consume una sal violeta si acierta. El **Fanal de umbral** dura 14 segundos en un radio de 4,5 bloques y se consume al activarlo. Fabrica otro con un fanal de nácar y 2 sales violetas.
+
+## Fosa del Testigo
+
+Una cavidad de geometría suspendida se encuentra al norte del observatorio, cerca de X 5, Z −40. Es una expedición opcional. Acércate y examina la huella con F o X en mando. Ofrece nácar y fanales sin alterar tus construcciones. También hay tres familias de vegetación por bioma, con agrupaciones deterministas y paso libre.
 
 ## Menú e interfaz
 
