@@ -149,3 +149,60 @@ test('Los hallazgos son únicos y el índice de fanales sigue al bloque',async()
   assert.ok(loaded.world.set(...cell,w.base(...cell)));
   assert.equal(nearbyLanterns(loaded.world,player).length,0);
 });
+
+test('Los dos asentamientos tienen entradas transitables y usan mallas de chunks',()=>{
+  for(const seed of ['MAREA-17','A','bajamar']) {
+    const w=new World(seed);
+    assert.equal(w.settlements.length,2);
+    for(const site of w.settlements) {
+      const x=site.x+(site.id==='boyas'?2:5);
+      for(let z=site.z+5;z<site.z+site.depth;z++) {
+        assert.equal(collides(w,x+.5,site.y+1,z+.5),false);
+        assert.ok(w.get(x,site.y,z));
+      }
+      assert.equal(w.get(x,site.y+1,site.z+site.cache[1]),7);
+      assert.ok(meshChunk(w,Math.floor(x/16),Math.floor(site.z/16)).positions.length);
+    }
+  }
+});
+
+test('Migrar una partida v2 respeta las ediciones y la posición en las huellas originales',()=>{
+  const w=new World('MAREA-17',[-1,-1]),s=newState(w);
+  w.set(4,22,-16,8);
+  Object.assign(s.player,{x:-24.5,y:surface(w,-25,12)+.02,z:12.5,yaw:.8});
+  const old=JSON.parse(encode(w,s,DEFAULT_SETTINGS));
+  old.version=2;
+  advanceEcho(s,'spine');
+  old.echoes=s.echoes;
+  const load=decode(JSON.stringify(old));
+  assert.deepEqual(load.world.layout,[1,1]);
+  assert.equal(load.world.get(4,22,-16),8);
+  assert.equal(load.state.player.x,-24.5);
+  assert.equal(load.state.player.y,s.player.y);
+  assert.deepEqual(load.state.echoes,['spine']);
+  assert.deepEqual(decode(encode(load.world,load.state,load.settings)).world.layout,[1,1]);
+});
+
+test('Suministros únicos, receta de umbral y persistencia de los efectos',async()=>{
+  const {discover}=await import('../src/expeditions.js');
+  const {nearestSignal,wardCovers}=await import('../src/settlements.js');
+  const w=new World('MAREA-17'),s=newState(w);
+  for(const site of w.settlements) {
+    assert.equal(discover(s,site,gain),true);
+    assert.equal(discover(s,site,gain),false);
+  }
+  assert.equal(s.bag.needle,1);
+  assert.equal(s.bag.saltlance,1);
+  gain(s,'8');
+  assert.ok(craft(s,RECIPES.find(recipe=>recipe.id==='ward')));
+  assert.equal(s.bag.ward,2);
+  assert.equal(s.bag[5],1);
+  assert.equal(nearestSignal(w,s,[]),undefined);
+  s.ward={x:.5,y:15,z:7.5,until:14};
+  s.needleReady=8;
+  const load=decode(encode(w,s,DEFAULT_SETTINGS));
+  assert.deepEqual(load.state.discoveries,['boyas','costillas']);
+  assert.equal(load.state.needleReady,8);
+  assert.ok(wardCovers(load.state.ward,1,{x:4,y:15,z:7.5}));
+  assert.equal(wardCovers(load.state.ward,14,{x:4,y:15,z:7.5}),false);
+});

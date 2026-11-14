@@ -1,3 +1,5 @@
+import {SETTLEMENTS, sitesFor, settlementVoxel} from './settlements.js';
+
 export const WIDTH = 96;
 export const HALF = WIDTH / 2;
 export const HEIGHT = 40;
@@ -100,6 +102,9 @@ function makeChunk(world,cx,cz) {
   const startX=cx*CHUNK, startZ=cz*CHUNK;
   for (let dz=0;dz<CHUNK;dz++) for (let dx=0;dx<CHUNK;dx++) {
     const x=startX+dx, z=startZ+dz;
+    const site=world.settlements.find(s=>x>=s.x && x<s.x+s.width && z>=s.z && z<s.z+s.depth);
+    const approach=!site && world.settlements.find(s=>Math.abs(x-s.x-s.entrance)<=1 &&
+      z>=s.z+s.depth && z<s.z+s.depth+4);
     const {h,biome}=column(world.number,x,z);
     const r=randomAt(world.number+53,x,z);
     const shape=Math.pow(Math.sin((x+z*.45)*.54),10);
@@ -138,6 +143,14 @@ function makeChunk(world,cx,cz) {
         if (rib && y===h+1 && r>.57) id=r>.9?6:7;
       }
       if (Math.abs(x-2)<=1 && z===-26 && y===8) id=7;
+      if(site && y>0) {
+        if(y<site.y && !id) id=site.id==='boyas'?1:3;
+        else if(y>=site.y) id=settlementVoxel(site,x,y,z)??0;
+      } else if(approach && y>0) {
+        if(y===approach.y) id=7;
+        else if(y>approach.y) id=0;
+        else if(!id) id=3;
+      }
       data[(dz*CHUNK+dx)*HEIGHT+y]=id;
     }
   }
@@ -145,9 +158,17 @@ function makeChunk(world,cx,cz) {
 }
 
 export class World {
-  constructor(seed) {
+  constructor(seed,layout=[0,0]) {
     this.seed=seed;
     this.number=hashSeed(seed);
+    this.layout=[...layout];
+    this.settlementFloors=SETTLEMENTS.map((site,i)=>{
+      const anchor=site.anchors[layout[i]];
+      if(!anchor) return 0;
+      const [x,z]=anchor;
+      return column(this.number,x+site.entrance,z+site.depth).h;
+    });
+    this.settlements=sitesFor(this);
     this.chunks=new Map();
     this.edits=new Map();
     this.lanternChunks=new Map();

@@ -1,3 +1,4 @@
+import {cachePosition, wardCovers} from './settlements.js';
 import {SITES, sitePosition, nearbyLanterns} from './expeditions.js';
 import {trace} from './systems.js';
 import * as T from '../vendor/three.module.min.js';
@@ -210,6 +211,10 @@ export class View {
     this.targetFog=new T.Color();
     this.chunkGroup=new T.Group();this.scene.add(this.chunkGroup);
     this.decor=new T.Group();this.scene.add(this.decor);
+    this.wardRing=halo(4.5,'#ffe5a3');
+    this.wardRing.rotation.x=-Math.PI/2;
+    this.wardRing.visible=false;
+    this.scene.add(this.wardRing);
     this.meshes=new Map();this.queue=[];
     this.dustHeight=0;
     this.dustRise=0;
@@ -258,6 +263,12 @@ export class View {
     this.landmarks=LANDMARKS.map(p=>platform(this.decor,world,p));
     this.eye=observatory(this.decor,world);
     for(const site of SITES) expeditionModel(this.decor,world,site);
+    for(const site of world.settlements) {
+      const [x,y,z]=cachePosition(site);
+      const marker=new T.Mesh(new T.OctahedronGeometry(.21),pearl);
+      marker.position.set(x,y+.67,z);
+      this.decor.add(marker);
+    }
     this.lightClock=0;
     this.mobs=spawnMobs(this.decor,world);
 
@@ -343,13 +354,22 @@ export class View {
     return this.landmarks.find(e=>Math.hypot(e.group.position.x-p.x,e.group.position.z-p.z,(e.group.position.y-p.y)*1.25)<3.15);
   }
 
-  scared(p,dir,reach=3) {
+  updateWard(ward,elapsed) {
+    this.ward=ward;
+    this.wardRing.visible=!!ward && elapsed<ward.until;
+    if(this.wardRing.visible) this.wardRing.position.set(ward.x,ward.y+.06,ward.z);
+  }
+
+  scared(p,dir,reach=3,kind=null) {
     let hit=false;
     for(const m of this.mobs) {
+      if(kind && m.kind!==kind) continue;
       const dx=m.x-p.x,dz=m.z-p.z,dist=Math.hypot(dx,dz,m.y-p.y);
       if(dist>reach || (dist>.01 && (dx*dir[0]+dz*dir[2])/dist<.48)) continue;
       const eye=[p.x,p.y+1.15,p.z];
-      if(trace(this.world,eye,[dx/(dist||1),(m.y-p.y)/(dist||1),dz/(dist||1)],Math.max(0,dist-.3))) continue;
+      const vertical=m.y+.8-eye[1];
+      const sight=Math.hypot(dx,vertical,dz)||1;
+      if(trace(this.world,eye,[dx/sight,vertical/sight,dz/sight],Math.max(0,sight-.3))) continue;
       m.flee=7;m.noticed=false;m.charge=0;hit=true;
     }
     return hit;
@@ -366,7 +386,7 @@ export class View {
       const reach=low?8.5:5.7;
       const vertical=Math.abs(p.y-m.y);
       m.cool=Math.max(0,m.cool-dt);m.flee=Math.max(0,m.flee-dt);
-      const lit=m.kind==='rasp' && dist<reach && nearbyLanterns(this.world,m,3.3,1).length>0;
+      const lit=m.kind==='rasp' && (wardCovers(this.ward,t,m) || (dist<reach && nearbyLanterns(this.world,m,3.3,1).length>0));
       const active=m.kind==='rasp' && !m.flee && !lit && dist<reach && vertical<2.2;
       const canStrike=active && dist<1.45 && vertical<1.3 && m.cool===0 &&
         !trace(this.world,[m.x,m.y+1,m.z],[dx/(dist||1),(p.y-m.y)/(dist||1),dz/(dist||1)],Math.max(0,dist-.25));

@@ -1,4 +1,4 @@
-# La Marea Hueca · 0.3.1
+# La Marea Hueca · 0.4.0
 
 Sandbox voxel de exploración, construcción y supervivencia con horror cósmico. El mar se retiró de una cuenca que conserva voces bajo la piedra. Puedes excavar, construir tu refugio o salir en busca de dos ecos y llevarlos al recinto enterrado bajo el observatorio.
 
@@ -36,13 +36,20 @@ Abre `http://127.0.0.1:4173/`. El proceso sirve archivos estáticos. El juego no
 
 Los tres hallazgos del cuaderno son opcionales. Examínalos con F y usa sus materiales para fabricar fanales, el gancho o bloques de refugio. Los fanales colocados iluminan su entorno y disuaden a las raspaduras cercanas. Ante el aviso de embestida, toma distancia o usa el gancho.
 
+## Asentamientos y objetos especiales
+
+- **Poblado de las Boyas · La Costra.** La torre de junco señala dos refugios junto a un embarcadero seco. Busca la puerta sur del refugio de caliza. En una partida nueva, la entrada al poblado está cerca de X 9, Z −8. El almacén contiene caliza, junco y la Aguja de resonancia.
+- **Estación de las Costillas · El Espinazo.** Dos pilares enmarcan la entrada sur del archivo de basalto, cerca de X −24, Z 13. Su almacén contiene materiales, una Lanza de sal y un Fanal de umbral.
+- Entra y pulsa **F** junto al armario marcado con un diamante. Las coordenadas de tu mundo están en el cuaderno (**C**). Si todas las huellas candidatas de un asentamiento están ocupadas por ediciones antiguas, ese asentamiento se omite para preservar la partida.
+- Equipa el objeto en la mochila (**E**). La **Aguja** indica rumbo y distancia al hallazgo pendiente más cercano, con 8 segundos de recarga. La **Lanza** ahuyenta raspaduras visibles a un máximo de 5 bloques y consume una sal violeta si acierta. El **Fanal de umbral** dura 14 segundos en un radio de 4,5 bloques y se consume al activarlo. Fabrica otro con un fanal de nácar y 2 sales violetas.
+
 ## Banda sonora
 
 El juego sintetiza su música en el navegador. **Donde rompe el junco** acompaña La Costra, **La vértebra de basalto** suena en El Espinazo, **Sedimento de luz** en La Salina Ciega y **El peso del agua ausente** entra al descender bajo el observatorio hacia la Cámara Sorda. Los encuentros y los hallazgos tienen motivos propios. Ajustes permite regular música y efectos por separado o silenciar ambos.
 
 ## Guardar y publicar
 
-El autoguardado escribe en una ranura por navegador y origen. Pausa ofrece guardado manual y exportación. Importa desde Créditos. Se pide confirmación al sustituir la ranura y se valida la semilla, las coordenadas, el inventario y las ediciones. El esquema 2 añade los hallazgos y abre también las partidas del esquema 1 con el mismo terreno y la misma ranura. El modo de prueba `?qa=1` guarda con claves separadas.
+El autoguardado escribe en una ranura por navegador y origen. Pausa ofrece guardado manual y exportación. Importa desde Créditos. Se pide confirmación al sustituir la ranura y se valida la semilla, las coordenadas, el inventario y las ediciones. El esquema 3 abre partidas de los esquemas 1 y 2 en la misma ranura. Al migrar, sitúa los asentamientos en huellas que no coinciden con tus ediciones ni con tu posición guardada. El modo de prueba `?qa=1` guarda con claves separadas.
 
 ```bash
 npm test

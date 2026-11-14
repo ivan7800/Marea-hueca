@@ -1,5 +1,6 @@
+import {cachePosition, nearestSignal} from './settlements.js';
 import {SITES, nearbySite, discover} from './expeditions.js';
-import {World, BLOCKS, BIOMES, DEFAULT_SEED, HALF, affectedChunks, chunkKey, clamp} from './world.js';
+import {World, BLOCKS, BIOMES, DEFAULT_SEED, LANDMARKS, HALF, affectedChunks, chunkKey, clamp} from './world.js';
 import {DEFAULT_SETTINGS, SAVE_KEY, SET_KEY, EYE, ITEMS, RECIPES, canCraft, craft, gain, use, select, equip,
   newState, stepPlayer, trace, mine, place, miningTime, encode, decode, safeSettings,
   advanceEcho, currentBiome, forecast, recover} from './systems.js';
@@ -60,9 +61,20 @@ function show(name) {
     pause:()=> `<p>${pausedMessage || 'La cuenca se detiene mientras estás en pausa.'}</p>${buttons(['resume','Reanudar',true],['save','Guardar'],['inventory','Mochila'],['journal','Cuaderno'],['settings','Ajustes'],['export','Exportar partida'],['menu','Volver al menú'])}<p class="message" aria-live="polite"></p>`,
     resume:()=> `<p>Usa el ratón o I J K L para mirar. Puedes minar con M y colocar con N. Escape libera el cursor.</p>${buttons(['resume','Capturar cursor',true],['menu','Volver al menú'])}<p class="message" aria-live="polite"></p>`,
     defeat:()=> `<p>Regresarás junto al observatorio con la mochila y tus construcciones. El mundo conserva tu recorrido.</p>${buttons(['recover','Regresar a La Costra',true])}`,
-    journal:()=> `<p>${state.discoveries.length}/${SITES.length} hallazgos. Usa F junto a una baliza para examinarla y recoger sus materiales.</p><div class="rows">${SITES.map(site=>`<section class="journal-entry"><strong>${state.discoveries.includes(site.id)?site.title:'Baliza por examinar'}</strong><small>X ${site.x} · Z ${site.z}</small>${state.discoveries.includes(site.id)?`<p>${site.line}</p>`:''}</section>`).join('')}</div>${buttons(['resume','Reanudar',true],['pause','Pausa'])}`,
+    journal:()=> {
+      const settlements=world.settlements.map(site=>{
+        const found=state.discoveries.includes(site.id);
+        return `<section class="journal-entry"><strong>${site.title}</strong><small>${site.biome} · X ${site.x+5} · Z ${site.z+site.depth-1}</small><p>${found?site.note:'Busca el armario de suministros y pulsa F.'}</p></section>`;
+      }).join('');
+      const landmarks=SITES.map(site=>{
+        const found=state.discoveries.includes(site.id);
+        return `<section class="journal-entry"><strong>${found?site.title:'Baliza por examinar'}</strong><small>X ${site.x} · Z ${site.z}</small>${found?`<p>${site.line}</p>`:''}</section>`;
+      }).join('');
+      const count=SITES.filter(site=>state.discoveries.includes(site.id)).length;
+      return `<p>${count}/${SITES.length} hallazgos. Examina las balizas con F.</p><div class="rows">${landmarks}</div><h3>Asentamientos</h3><div class="rows">${settlements || '<p>La cuenca conserva tus construcciones en los emplazamientos candidatos.</p>'}</div>${buttons(['resume','Reanudar',true],['pause','Pausa'])}`;
+    },
     settings:()=> `<div class="form-grid">${[['music','Música'],['effects','Efectos'],['sensitivity','Sensibilidad']].map(([k,n])=>`<label class="setting">${n}<input data-setting="${k}" type="range" min="0" max="100" value="${settings[k]}"></label>`).join('')}<label class="setting">Distancia de visión<select data-setting="view">${[[2,'Corta'],[3,'Normal'],[4,'Larga']].map(([n,w])=>`<option value="${n}"${settings.view===n?' selected':''}>${w}</option>`).join('')}</select></label><label class="setting">Resolución 3D<select data-setting="resolution">${[['low','Baja'],['auto','Normal'],['high','Alta']].map(([n,w])=>`<option value="${n}"${settings.resolution===n?' selected':''}>${w}</option>`).join('')}</select></label><label class="check"><input data-setting="mute" type="checkbox"${settings.mute?' checked':''}> Silencio total</label><label class="check"><input data-setting="reduced" type="checkbox"${settings.reduced?' checked':''}> Reducir movimiento y efectos</label></div>${buttons(['back','Volver',true])}`,
-    inventory:()=> `<p>Pulsa un objeto para ponerlo en la casilla rápida ${state.selected+1}. Selecciona casilla con 1–8 o la rueda durante la partida.</p><div class="inventory">${Object.entries(state.bag).map(([id,n])=>`<button data-equip="${id}">${chip(id)}<span>${ITEMS[id].name} · ${n}</span></button>`).join('') || '<span>Mochila vacía.</span>'}</div><h3>Fabricación</h3><div class="recipes">${RECIPES.map((r,i)=>`<div class="recipe"><div><strong>${ITEMS[r.id].name}${r.count>1?` × ${r.count}`:''}</strong><small>${r.note}<br>${Object.entries(r.costs).map(([id,n])=>`${n} ${ITEMS[id].name}`).join(' · ')}</small></div><button data-recipe="${i}"${canCraft(state,r)?'':' disabled'}>Fabricar</button></div>`).join('')}</div>${buttons(['resume','Reanudar',true],['pause','Pausa'])}<p class="message" aria-live="polite"></p>`,
+    inventory:()=> `<p>Pulsa un objeto para ponerlo en la casilla rápida ${state.selected+1}. Selecciona casilla con 1–8 o la rueda durante la partida.</p><div class="inventory">${Object.entries(state.bag).map(([id,n])=>`<button data-equip="${id}">${chip(id)}<span>${ITEMS[id].name} · ${n}${ITEMS[id].note?`<small>${ITEMS[id].note}</small>`:''}</span></button>`).join('') || '<span>Mochila vacía.</span>'}</div><h3>Fabricación</h3><div class="recipes">${RECIPES.map((r,i)=>`<div class="recipe"><div><strong>${ITEMS[r.id].name}${r.count>1?` × ${r.count}`:''}</strong><small>${r.note}<br>${Object.entries(r.costs).map(([id,n])=>`${n} ${ITEMS[id].name}`).join(' · ')}</small></div><button data-recipe="${i}"${canCraft(state,r)?'':' disabled'}>Fabricar</button></div>`).join('')}</div>${buttons(['resume','Reanudar',true],['pause','Pausa'])}<p class="message" aria-live="polite"></p>`,
     credits:()=> `<p>Mundo, código, texturas, ilustración y sonido originales de <em>La Marea Hueca</em>. La música se sintetiza mientras juegas.</p><p>Three.js r180 · © Three.js Authors · licencia MIT incluida.</p><p><strong>Partidas locales</strong><br>Importa una copia JSON para trasladar tu mundo a otro navegador.</p><div class="panel-actions"><button data-action="import">Importar partida</button>${disk()?'<button data-action="export">Exportar partida</button>':''}<button data-action="back">Volver</button></div><input id="import-file" type="file" accept=".json,application/json" hidden><p class="message" aria-live="polite"></p>`
   };
   panel.innerHTML=body(name,templates[name]());
@@ -155,6 +167,7 @@ async function start(loaded,raw,entrance) {
     $('damage-layer').style.opacity='0';$('notice').textContent='';
     mode='load';closePanel();$('front').hidden=true;$('hud').hidden=true;$('loading').hidden=false;
     view.resize(settings);view.start(world);
+    view.updateWard(state.ward,state.elapsed);
     view.stream(state.player,settings.view);chunk=chunkKey(state.player.x,state.player.z);
     const total=view.queue.length;
     for(let i=0;i<Math.min(total,9);i++) {
@@ -182,7 +195,7 @@ async function start(loaded,raw,entrance) {
 }
 
 function chip(id) {
-  const icon={chisel:'◇',hook:'•',moss:'+'}[id]??'';
+  const icon={chisel:'◇',hook:'•',moss:'+',needle:'↟',saltlance:'↑',ward:'✧'}[id]??'';
   return `<span class="chip" style="--item:${ITEMS[id].color}" aria-hidden="true">${icon}</span>`;
 }
 function drawBar() {
@@ -217,8 +230,9 @@ function drawHUD(hit) {
   const missing=[!state.echoes.includes('spine')?'Oeste (−28, −5)':null,!state.echoes.includes('salt')?'Este (28, 1)':null].filter(Boolean);
   $('objective-title').textContent=state.finished?'El eco devuelto':'El eco bajo la piedra';
   $('objective-detail').textContent=state.finished?'Las aguas se retiraron. Tú eliges qué levantar ahora.':missing.length?`${state.echoes.length}/2 ecos · ${missing.join(' · ')}`:'Norte (0, −24) · Baja por el observatorio.';
-  const nearbyDiscovery=nearbySite(world,p);
-  $('prompt').textContent=landmark?`F · Escuchar ${landmark.title}`:nearbyDiscovery?`F · Examinar ${nearbyDiscovery.title}`:activeItem()==='hook'?'F · Ahuyentar con el gancho':activeItem()==='moss'?'F · Usar musgo vivo':'';
+  const cache=nearbyCache(p), nearbyDiscovery=nearbySite(world,p);
+  $('prompt').textContent=cache?`F · Abrir suministros: ${cache.title}`:landmark?`F · Escuchar ${landmark.title}`:nearbyDiscovery?`F · Examinar ${nearbyDiscovery.title}`:({hook:'F · Ahuyentar con el gancho',moss:'F · Usar musgo vivo',needle:'F · Buscar una señal',
+      saltlance:'F · Ahuyentar con sal violeta',ward:'F · Activar protección'})[activeItem()]??'';
 }
 function damage(amount,text) {
   if(mode!=='play') return;
@@ -236,8 +250,56 @@ function changeBlock(cell,event,id) {
   view.burst(cell,settings.reduced,event==='place');sound.event(event,BLOCKS[id].tone);
   revision++;drawBar();
 }
+function nearbyCache(p) {
+  return world.settlements.find(site=>{
+    const target=cachePosition(site);
+    const origin=[p.x,p.y+EYE,p.z];
+    const delta=target.map((coord,i)=>coord-origin[i]);
+    const distance=Math.hypot(...delta);
+    if(distance>=2.75) return false;
+    const hit=trace(world,origin,delta.map(d=>d/(distance||1)),distance);
+    return !hit || hit.cell.every((coord,i)=>coord===Math.floor(target[i]));
+  });
+}
+
+function useSpecial(id,p) {
+  if(id==='needle') {
+    if(state.needleReady>state.elapsed) {notify('La aguja aún está recuperando la señal.');return;}
+    const signal=nearestSignal(world,state,LANDMARKS);
+    if(!signal) {notify('La aguja no detecta ecos ni suministros pendientes.');return;}
+    state.needleReady=state.elapsed+8;
+    sound.event('echo');
+    notify(`Aguja · ${signal.heading}, ${signal.distance} bloques · ${signal.title}`,6);
+  } else if(id==='saltlance') {
+    if(!state.bag[5]) {notify('Necesitas una unidad de sal violeta.');return;}
+    if(!view.scared(p,direction(p),5,'rasp')) {notify('Apunta a una raspadura visible a menos de 5 bloques.');return;}
+    use(state,'5');
+    sound.event('creature');
+    notify('Lanza de sal · La raspadura se retira.');
+    drawBar();
+  } else if(id==='ward') {
+    if(state.ward?.until>state.elapsed) {notify('Ya hay un umbral activo.');return;}
+    if(!p.ground) {notify('Pisa suelo firme para activar el umbral.');return;}
+    use(state,'ward');
+    state.ward={x:p.x,y:p.y,z:p.z,until:state.elapsed+14};
+    view.updateWard(state.ward,state.elapsed);
+    sound.event('craft');
+    notify('Umbral activo · Radio de 4,5 bloques durante 14 s.');
+    drawBar();
+  }
+}
+
 function useAction() {
   const p=state.player,e=view.nearLandmark(p),id=activeItem();
+  const cache=nearbyCache(p);
+  if(cache) {
+    if(state.discoveries.includes(cache.id)) {notify(cache.note,7);return;}
+    if(!discover(state,cache,gain)) {notify('Libera espacio en la mochila para recoger los suministros.');return;}
+    sound.discovery();
+    notify(`Suministros recogidos · ${cache.title}. Consulta el cuaderno.`,6);
+    drawBar();
+    return;
+  }
   if(e) {
     const previous=state.echoes.length, finished=state.finished;
     const text=advanceEcho(state,e.id);
@@ -257,7 +319,7 @@ function useAction() {
     const heal=Math.min(24,100-p.health);p.health+=heal;notify('Musgo vivo · +'+Math.floor(heal)+' de salud.');sound.event('craft');drawBar();
   } else if(id==='hook' && view.scared(p,direction(p))) {
     sound.event('creature');notify('El gancho ahuyentó a la criatura.');
-  }
+  } else useSpecial(id,p);
 }
 function blockHit() {
   const p=state.player;
@@ -305,6 +367,8 @@ function tick(now) {
     }
   } else {mined=0;mineKey='';}
   state.elapsed+=dt;
+  if(state.ward && state.ward.until<=state.elapsed) state.ward=null;
+  view.updateWard(state.ward,state.elapsed);
   const b=currentBiome(p), tide=forecast(state.elapsed);
   if(lastBiome>=0 && b!==lastBiome) notify(BIOMES[b].name);
   if(!lastLow && tide.low) notify('Bajamar. Las raspaduras salen más lejos.');
@@ -494,12 +558,12 @@ if(qa) {
   window.mareaQA=Object.freeze({
     state:()=>state?{mode,player:{...state.player},seed:world.seed,bag:{...state.bag},revision,
       edits:[...world.edits],discoveries:[...state.discoveries],echoes:[...state.echoes],finished:state.finished,biome:currentBiome(state.player),
-      elapsed:state.elapsed,deaths:state.deaths,selected:state.selected,
+      activeItem:activeItem(),ward:state.ward,needleReady:state.needleReady,elapsed:state.elapsed,deaths:state.deaths,selected:state.selected,
       chunks:view.meshes.size,todo:view.queue.length,locked:document.pointerLockElement?.id??null,
       target:blockHit(),saved:!!disk(),renderer:view.renderer.getContext().getParameter(view.renderer.getContext().VERSION),
       glError:view.renderer.getContext().getError(), calls:view.renderer.info.render.calls,
       triangles:view.renderer.info.render.triangles,
-      creatures:view.mobs.map(({kind,x,y,z})=>({kind,x,y,z}))}:{mode},
+      creatures:view.mobs.map(({kind,x,y,z,flee})=>({kind,x,y,z,flee}))}:{mode},
     audio:()=>({context:sound.ctx?.state??null,scene:sound.scene,voices:sound.voices.size,
       music:sound.musicLevel,effects:sound.effectsLevel}),
     frames:()=>measurements.slice(),

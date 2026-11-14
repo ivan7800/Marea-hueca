@@ -40,3 +40,9 @@ Para repetir la verificación ejecuta `npm ci`, `npm test`, `npm run build` y `n
 
 - El firmamento añade un satélite facetado y un arco distante. Ambos se mueven lentamente, desaparecen en la Cámara Sorda y respetan movimiento reducido.
 - La posición de la luz lunar y el tono del halo cambian gradualmente durante la bajamar. Las estrellas aumentan su presencia sin flashes.
+
+## 0.4.0 · Asentamientos
+
+- Poblado de las Boyas en La Costra y Estación de las Costillas en El Espinazo. Sus edificios y accesos se incluyen en la malla normal del terreno. Se niveló el acceso de Costillas tras encontrar un desnivel bloqueante en Chromium.
+- La Aguja de resonancia y la Lanza de sal se encuentran en los almacenes. El Fanal de umbral también se puede fabricar. Los tres se equipan desde la mochila y se usan con F.
+- El esquema v3 guarda la huella elegida, los suministros recogidos y el estado de los efectos. En una partida anterior se elige una huella libre de ediciones y de la posición guardada. Si se descartan las tres huellas de un asentamiento, se omite ese asentamiento.

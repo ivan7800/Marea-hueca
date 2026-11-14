@@ -51,3 +51,10 @@ El recorrido de aceptación utilizó I/J/K/L, M y N para cámara, extracción y 
 ## Verificación de 0.3.1
 
 - La escena celeste se comprobó en Chromium 141 con WebGL 2 sobre SwiftShader. Satélite y arco permanecen estables en superficie y se atenúan con profundidad. El movimiento reducido congela su animación. La prueba no representa una GPU física.
+
+## Verificación de 0.4.0
+
+- Chromium 141.0.7390.0 en Linux con SwiftShader, resolución de ventana 800 × 500 CSS, calidad baja y nueve chunks. La prueba `tests/settlement-browser.mjs` carga partidas de QA en los accesos y usa el teclado para cruzar las entradas. Usa el ratón para operar los menús, fabricar y equipar. Se recogieron los dos armarios una sola vez, se probó el rumbo y la recarga de la aguja, se ahuyentó una raspadura gastando una sal, se fabricó y activó el umbral y se guardó y recargó el progreso. El ensayo aislado del umbral no registró daño durante dos segundos. El recorrido no partió de la aparición inicial.
+- En tomas fijas de 4,35 s, Boyas registró 9,1 FPS, 38 llamadas y 13.060 triángulos. Costillas registró 14,6 FPS, 87 llamadas y 22.606 triángulos. El host virtualizado tenía carga variable y estos datos no representan una GPU física.
+- Node 24.22.1, semilla MAREA-17, Xeon Platinum 8573C virtualizado. Medianas de 60 tomas alternas de generación y malla fría de nueve chunks, base 0.3.1 → 0.4.0: Boyas 17,92 → 18,86 ms (5.844 → 6.104 caras), Costillas 18,99 → 19,42 ms (12.681 → 12.343 caras).
+- 14 pruebas de sistemas, incluidas transitabilidad en tres semillas, migración v1/v2, recompensas únicas y persistencia de los objetos. Se construyeron la web y el HTML autónomo.

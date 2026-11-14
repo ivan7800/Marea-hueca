@@ -1,5 +1,11 @@
 # Cambios
 
+## 0.4.0
+
+- Dos asentamientos construidos con vóxeles, con refugios transitables, suministros únicos y notas en el cuaderno.
+- Aguja de resonancia, Lanza de sal y Fanal de umbral, con efectos indicados en la mochila.
+- Guardado v3 con migración de v1/v2 y elección de huellas libres de ediciones antiguas.
+
 ## 0.3.1
 
 - Segundo cuerpo celeste y arco distante con movimiento lento, brillo atenuado bajo tierra y movimiento reducido respetado.
