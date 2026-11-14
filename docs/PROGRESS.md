@@ -61,3 +61,10 @@ Para repetir la verificación ejecuta `npm ci`, `npm test`, `npm run build` y `n
 - Candidata de revisión. La validación de navegador quedó bloqueada en este entorno antes de cargar el juego: Chromium no puede crear su socket de proceso. Ver QA.
 
 - Continuación del acabado ambiental: vegetación instanciada por bioma con densidad baja, escarpe exterior fuera del área jugable y bandas del cielo que respetan movimiento reducido. La geometría vegetal sigue la superficie y se oculta localmente al modificar una columna. Las partidas y las huellas existentes conservan sus coordenadas.
+
+## 0.6.1 · Controles de mando
+
+- Base publicada: `98607ee` (0.6.0). Árbol de trabajo aislado para conservar los archivos de la sesión anterior. Las 15 pruebas de referencia y las dos compilaciones pasaron.
+- Integrada la API Gamepad con asignación estándar, movimiento analógico y los mismos efectos de juego que teclado y ratón. La sesión iniciada con mando no solicita capturar el cursor. La navegación utiliza los controles de interfaz existentes.
+- Conservado el formato de guardado v4. Los ajustes nuevos tienen valores por defecto en partidas anteriores. La 0.6.0 solo ofrecía las reglas de supervivencia. El modo Libre pertenece a otra actualización.
+- La información de rumbo inicial ahora está disponible con cualquier control y el aviso de proximidad de la raspadura describe el peligro en pantalla.

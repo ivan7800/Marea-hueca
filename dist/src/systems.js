@@ -23,7 +23,7 @@ export const RECIPES = [
   { id:'moss', count:2, costs:{2:2,4:1}, note:'Recupera 24 puntos de salud con F.' },
   { id:'ward', count:1, costs:{8:1,5:2}, note:'F · Protección temporal alrededor del punto de uso.' }
 ];
-export const DEFAULT_SETTINGS={music:58, effects:68, sensitivity:50, view:3, mute:false, reduced:false, resolution:'auto'};
+export const DEFAULT_SETTINGS={music:58, effects:68, sensitivity:50, padSensitivity:50, deadzone:20, view:3, mute:false, reduced:false, resolution:'auto'};
 export const SAVE_VERSION=4;
 export const MAX_STACK=999;
 export const SLOTS=8;
@@ -98,7 +98,7 @@ export function collides(world,x,y,z) {
 
 export function stepPlayer(world,p,move,dt) {
   const speed=move.sprint?6.4:4.2;
-  const length=Math.hypot(move.x,move.z)||1;
+  const length=Math.max(1,Math.hypot(move.x,move.z));
   const x=move.x/length, z=move.z/length;
   const targetX=(Math.cos(p.yaw)*x-Math.sin(p.yaw)*z)*speed;
   const targetZ=(-Math.sin(p.yaw)*x-Math.cos(p.yaw)*z)*speed;
@@ -213,7 +213,8 @@ export function recover(world,state) {
 
 export function safeSettings(data) {
   const s={...DEFAULT_SETTINGS};
-  for (const key of ['music','effects','sensitivity']) if (Number.isFinite(data?.[key])) s[key]=clamp(data[key],0,100);
+  for (const key of ['music','effects','sensitivity','padSensitivity']) if (Number.isFinite(data?.[key])) s[key]=clamp(data[key],0,100);
+  if (Number.isFinite(data?.deadzone)) s.deadzone=clamp(data.deadzone,10,40);
   if ([2,3,4].includes(data?.view)) s.view=data.view;
   for (const key of ['mute','reduced']) if (typeof data?.[key]==='boolean') s[key]=data[key];
   if (['auto','low','high'].includes(data?.resolution)) s.resolution=data.resolution;

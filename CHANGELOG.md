@@ -1,5 +1,12 @@
 # Cambios
 
+## 0.6.1
+
+- Controles analógicos con la API Gamepad y asignación estándar. Se puede recorrer la portada, pausar, usar la mochila y volver a la partida con mando.
+- Ajustes persistentes de sensibilidad y zona muerta. Las ayudas cambian según la entrada usada.
+- Al iniciar una sesión con mando, el cursor queda libre. Si el mando se desconecta, el juego se pausa y permite reanudar con ratón.
+- Aviso inicial con el rumbo del observatorio y texto de proximidad de criaturas que no depende del sonido.
+
 ## 0.6.0
 
 - Escarpe exterior que oculta el corte cuadrado sin cambiar el límite de colisión. Vegetación dispersa por bioma, bandas lentas del cielo y ajuste local de las plantas al editar bloques.

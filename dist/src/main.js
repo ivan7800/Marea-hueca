@@ -1,3 +1,4 @@
+import {GamepadInput, PAD} from './gamepad.js';
 import {cachePosition, nearestSignal} from './settlements.js';
 import {SITES, nearbySite, discover} from './expeditions.js';
 import {World, BLOCKS, BIOMES, DEFAULT_SEED, LANDMARKS, HALF, affectedChunks, chunkKey, clamp} from './world.js';
@@ -14,6 +15,17 @@ let storage;
 try {storage=window.localStorage;} catch {}
 const sound=new Sound();
 const keys=new Set();
+const gamepad=new GamepadInput();
+let input='keyboard',padSession=false,padMining=false;
+const keyboardHelp=$('quick-help').innerHTML;
+function inputMethod(method) {
+  if(input===method) return;
+  input=method;
+  $('quick-help').innerHTML=method==='pad'
+    ?'<span><kbd>Stick izq.</kbd> Mover</span><span><kbd>Stick der.</kbd> Mirar</span><span><kbd>A</kbd> Saltar</span><span><kbd>RT</kbd> Minar</span><span><kbd>LT</kbd> Colocar</span><span><kbd>X</kbd> Usar</span><span><kbd>Y</kbd> Mochila</span><span><kbd>Menú</kbd> Pausa</span>'
+    :keyboardHelp;
+  document.documentElement.classList.toggle('using-pad',method==='pad');
+}
 const qa=new URLSearchParams(location.search).get('qa')==='1';
 const slot=qa?SAVE_KEY+':qa':SAVE_KEY, settingsSlot=qa?SET_KEY+':qa':SET_KEY;
 const controlQuery=matchMedia('(any-pointer: fine)');
@@ -58,7 +70,7 @@ function refreshMenu() {
   $('save-status').textContent=!playable?'La cuenca se juega con teclado y ratón. Puedes consultar ajustes y controles.':saved?'◆ Partida local disponible · Continuar abre tu último mundo':'◇ Sin partida local · Crea un mundo para comenzar';
 }
 function stop() {
-  keys.clear(); mining=false;mined=0;jump=false;mineKey='';physics=0;
+  keys.clear(); padMining=false;mining=false;mined=0;jump=false;mineKey='';physics=0;
   if(state) state.player.vx=state.player.vz=0;
 }
 function inventorySelection() {
@@ -75,22 +87,22 @@ function show(name) {
   const templates={
     new:()=> `<form class="form-grid" id="seed-form"><label for="seed">Semilla del mundo</label><input type="text" id="seed" maxlength="64" required value="${DEFAULT_SEED}" spellcheck="false" autocomplete="off"><p>La misma semilla reconstruye el mismo terreno. ${disk()?'Ya hay una partida en esta ranura. Puedes descargarla antes de sustituirla.':'Empiezas en La Costra, frente al observatorio.'}</p>${disk()?'<label class="check"><input id="replace-save" type="checkbox" required> Sustituir la partida local</label>':''}<div class="panel-actions"><button type="submit" class="primary">Entrar en la cuenca</button><button data-action="random" type="button">Otra semilla</button>${disk()?'<button data-action="export" type="button">Exportar partida actual</button>':''}</div></form><p class="message"></p>`,
     pause:()=> `<p>${pausedMessage || 'La cuenca se detiene mientras estás en pausa.'}</p><p class="panel-hint">El regreso al menú guarda el mundo. Exporta una copia si quieres trasladarlo.</p>${buttons(['resume','Reanudar',true],['save','Guardar'],['inventory','Mochila'],['journal','Cuaderno'],['settings','Ajustes'],['guide','Controles'],['export','Exportar partida'],['menu','Volver al menú'])}<p class="message" aria-live="polite"></p>`,
-    resume:()=> `<p>Usa el ratón o I J K L para mirar. Puedes minar con M y colocar con N. Escape libera el cursor.</p>${buttons(['resume','Capturar cursor',true],['menu','Volver al menú'])}<p class="message" aria-live="polite"></p>`,
+    resume:()=> `<p>Usa el ratón o I J K L para mirar. Puedes minar con M y colocar con N. Escape libera el cursor. Con mando, pulsa Menú para entrar sin capturarlo.</p>${buttons(['resume','Capturar cursor',true],['menu','Volver al menú'])}<p class="message" aria-live="polite"></p>`,
     defeat:()=> `<p>Regresarás junto al observatorio con la mochila y tus construcciones. El mundo conserva tu recorrido.</p>${buttons(['recover','Regresar a La Costra',true])}`,
     journal:()=> {
       const settlements=world.settlements.map(site=>{
         const found=state.discoveries.includes(site.id);
-        return `<section class="journal-entry"><strong>${site.title}</strong><small>${site.biome} · X ${site.x+site.entrance} · Z ${site.z+site.depth-1}</small><p>${found?site.note:'Busca los suministros bajo el marcador y pulsa F.'}</p></section>`;
+        return `<section class="journal-entry"><strong>${site.title}</strong><small>${site.biome} · X ${site.x+site.entrance} · Z ${site.z+site.depth-1}</small><p>${found?site.note:'Busca los suministros bajo el marcador y usa F o X.'}</p></section>`;
       }).join('');
       const landmarks=SITES.map(site=>{
         const found=state.discoveries.includes(site.id);
         return `<section class="journal-entry"><strong>${found?site.title:'Baliza por examinar'}</strong><small>X ${site.x} · Z ${site.z}</small>${found?`<p>${site.line}</p>`:''}</section>`;
       }).join('');
       const count=SITES.filter(site=>state.discoveries.includes(site.id)).length;
-      return `<p>${count}/${SITES.length} hallazgos. Examina las balizas con F.</p><div class="rows">${landmarks}</div><h3>Asentamientos</h3><div class="rows">${settlements || '<p>La cuenca conserva tus construcciones en los emplazamientos candidatos.</p>'}</div>${buttons(['resume','Reanudar',true],['pause','Pausa'])}`;
+      return `<p>${count}/${SITES.length} hallazgos. Examina las balizas con F o X.</p><div class="rows">${landmarks}</div><h3>Asentamientos</h3><div class="rows">${settlements || '<p>La cuenca conserva tus construcciones en los emplazamientos candidatos.</p>'}</div>${buttons(['resume','Reanudar',true],['pause','Pausa'])}`;
     },
-    settings:()=> `<div class="form-grid"><h3>Escucha y mirada</h3>${[['music','Música'],['effects','Efectos'],['sensitivity','Sensibilidad']].map(([k,n])=>`<label class="setting">${n}<input data-setting="${k}" type="range" min="0" max="100" value="${settings[k]}"></label>`).join('')}<h3>Imagen y comodidad</h3><label class="setting">Distancia de visión<select data-setting="view">${[[2,'Corta'],[3,'Normal'],[4,'Larga']].map(([n,w])=>`<option value="${n}"${settings.view===n?' selected':''}>${w}</option>`).join('')}</select></label><label class="setting">Resolución 3D<select data-setting="resolution">${[['low','Baja'],['auto','Normal'],['high','Alta']].map(([n,w])=>`<option value="${n}"${settings.resolution===n?' selected':''}>${w}</option>`).join('')}</select></label><label class="check"><input data-setting="mute" type="checkbox"${settings.mute?' checked':''}> Silencio total</label><label class="check"><input data-setting="reduced" type="checkbox"${settings.reduced?' checked':''}> Reducir movimiento y efectos</label></div>${buttons(['back','Volver',true])}`,
-    guide:()=> `<p>Construye a tu ritmo. Los ecos y los asentamientos son descubrimientos opcionales.</p><div class="control-grid"><div><kbd>W A S D</kbd><span>Moverse</span></div><div><kbd>ESPACIO</kbd><span>Saltar</span></div><div><kbd>RATÓN / I J K L</kbd><span>Mirar</span></div><div><kbd>IZQ / M</kbd><span>Extraer</span></div><div><kbd>DER / N</kbd><span>Colocar</span></div><div><kbd>F</kbd><span>Usar o escuchar</span></div><div><kbd>1–8 / RUEDA</kbd><span>Elegir casilla</span></div><div><kbd>E / C</kbd><span>Mochila / cuaderno</span></div><div><kbd>ESC / P</kbd><span>Pausa y cursor</span></div></div><p class="panel-hint">Música, efectos, sensibilidad y movimiento reducido se ajustan en Preferencias.</p>${buttons(['back','Volver',true])}`,
+    settings:()=> `<div class="form-grid"><h3>Escucha y mirada</h3>${[['music','Música'],['effects','Efectos'],['sensitivity','Sensibilidad del ratón'],['padSensitivity','Sensibilidad del mando'],['deadzone','Zona muerta del mando (%)']].map(([k,n])=>`<label class="setting">${n}<input data-setting="${k}" type="range" min="${k==='deadzone'?10:0}" max="${k==='deadzone'?40:100}" value="${settings[k]}"></label>`).join('')}<h3>Imagen y comodidad</h3><label class="setting">Distancia de visión<select data-setting="view">${[[2,'Corta'],[3,'Normal'],[4,'Larga']].map(([n,w])=>`<option value="${n}"${settings.view===n?' selected':''}>${w}</option>`).join('')}</select></label><label class="setting">Resolución 3D<select data-setting="resolution">${[['low','Baja'],['auto','Normal'],['high','Alta']].map(([n,w])=>`<option value="${n}"${settings.resolution===n?' selected':''}>${w}</option>`).join('')}</select></label><label class="check"><input data-setting="mute" type="checkbox"${settings.mute?' checked':''}> Silencio total</label><label class="check"><input data-setting="reduced" type="checkbox"${settings.reduced?' checked':''}> Reducir movimiento y efectos</label></div>${buttons(['back','Volver',true])}`,
+    guide:()=> `<p>Construye a tu ritmo. Los ecos y los asentamientos son descubrimientos opcionales.</p><div class="control-grid"><div><kbd>W A S D</kbd><span>Moverse</span></div><div><kbd>ESPACIO</kbd><span>Saltar</span></div><div><kbd>RATÓN / I J K L</kbd><span>Mirar</span></div><div><kbd>IZQ / M</kbd><span>Extraer</span></div><div><kbd>DER / N</kbd><span>Colocar</span></div><div><kbd>F</kbd><span>Usar o escuchar</span></div><div><kbd>1–8 / RUEDA</kbd><span>Elegir casilla</span></div><div><kbd>E / C</kbd><span>Mochila / cuaderno</span></div><div><kbd>ESC / P</kbd><span>Pausa y cursor</span></div></div><p class="panel-hint">Música, efectos, sensibilidad y movimiento reducido se ajustan en Ajustes.</p><h3>Mando con mapa estándar</h3><p>Palanca izquierda: mover. Derecha: mirar. A: saltar. RT: extraer. LT: colocar. X: usar. Y: mochila. LB/RB: barra rápida. Pulsar palanca izquierda: correr. Vista: cuaderno. Menú: pausa.</p><p>En los menús, usa la cruceta o la palanca izquierda para recorrer los controles, A para aceptar y B para volver. Usa teclado para escribir una semilla.</p>${buttons(['back','Volver',true])}`,
     inventory:()=> `<p>Pulsa un objeto para ponerlo en la casilla rápida ${state.selected+1}. Selecciona casilla con 1–8 o la rueda durante la partida.</p><div class="inventory">${Object.entries(state.bag).map(([id,n])=>`<button data-equip="${id}">${chip(id)}<span>${ITEMS[id].name} · ${n}${ITEMS[id].note?`<small>${ITEMS[id].note}</small>`:''}</span></button>`).join('') || '<span>Mochila vacía.</span>'}</div><h3>Fabricación</h3><div class="recipes">${RECIPES.map((r,i)=>`<div class="recipe"><div><strong>${ITEMS[r.id].name}${r.count>1?` × ${r.count}`:''}</strong><small>${r.note}<br>${Object.entries(r.costs).map(([id,n])=>`${ITEMS[id].name} ${state.bag[id]??0}/${n}`).join(' · ')}</small></div><button data-recipe="${i}"${canCraft(state,r)?'':' disabled'}>Fabricar</button></div>`).join('')}</div>${buttons(['resume','Reanudar',true],['pause','Pausa'])}<p class="message" aria-live="polite"></p>`,
     credits:()=> `<p>Mundo, código, texturas, ilustración y sonido originales de <em>La Marea Hueca</em>. La música se sintetiza mientras juegas.</p><p>Three.js r180 · © Three.js Authors · licencia MIT incluida.</p><p><strong>Partidas locales</strong><br>Importa una copia JSON para trasladar tu mundo a otro navegador.</p><div class="panel-actions"><button data-action="import">Importar partida</button>${disk()?'<button data-action="export">Exportar partida</button>':''}<button data-action="back">Volver</button></div><input id="import-file" type="file" accept=".json,application/json" hidden><p class="message" aria-live="polite"></p>`
   };
@@ -99,7 +111,7 @@ function show(name) {
   panel.scrollTop=0;
   if(name==='inventory') inventorySelection();
   panel.querySelector('[data-action=back]').focus({preventScroll:true});
-  if(name==='new') $('seed').focus();
+  if(name==='new') (input==='pad'?panel.querySelector('[type=submit]'):$('seed')).focus();
   if(name==='defeat') panel.querySelector('[data-action=recover]').focus();
 
 }
@@ -157,8 +169,12 @@ function pause(text='') {
   if(document.pointerLockElement) document.exitPointerLock();
   show('pause');
 }
-function resume() {
+function resume(withPad=false) {
   if(!state || mode==='defeat') return;
+  if(withPad) {
+    needClick=false;padSession=true;stop();closePanel();mode='play';pausedMessage='';
+    return;
+  }
   sound.start();
   if(!view.renderer.domElement.requestPointerLock) {
     message('Este navegador no puede capturar el cursor.');
@@ -203,7 +219,7 @@ async function start(loaded,raw,entrance) {
     }
     $('loading').hidden=true;$('hud').hidden=false;
     mode='pause';
-    if(entrance) notify('Mantén el botón izquierdo para extraer. Usa E para abrir la mochila.',6);
+    if(entrance) notify('Orientación inicial · El observatorio está al norte. Puedes construir desde aquí.',6);
     drawBar();
     drawHUD(null);
     const b=currentBiome(state.player), tide=forecast(state.elapsed);
@@ -257,8 +273,8 @@ function drawHUD(hit) {
   $('objective-title').textContent=state.finished?'El eco devuelto':'El eco bajo la piedra';
   $('objective-detail').textContent=state.finished?'Las aguas se retiraron. Tú eliges qué levantar ahora.':missing.length?`${state.echoes.length}/2 ecos · ${missing.join(' · ')}`:'Norte (0, −24) · Baja por el observatorio.';
   const cache=nearbyCache(p), nearbyDiscovery=nearbySite(world,p);
-  $('prompt').textContent=cache?`F · Abrir suministros: ${cache.title}`:landmark?`F · Escuchar ${landmark.title}`:nearbyDiscovery?`F · Examinar ${nearbyDiscovery.title}`:({hook:'F · Ahuyentar con el gancho',moss:'F · Usar musgo vivo',needle:'F · Buscar una señal',
-      saltlance:'F · Ahuyentar con sal violeta',ward:'F · Activar protección'})[activeItem()]??'';
+  $('prompt').textContent=(cache?`F · Abrir suministros: ${cache.title}`:landmark?`F · Escuchar ${landmark.title}`:nearbyDiscovery?`F · Examinar ${nearbyDiscovery.title}`:({hook:'F · Ahuyentar con el gancho',moss:'F · Usar musgo vivo',needle:'F · Buscar una señal',
+      saltlance:'F · Ahuyentar con sal violeta',ward:'F · Activar protección'})[activeItem()]??'').replace(/^F ·/,input==='pad'?'X ·':'F ·');
 }
 function damage(amount,text) {
   if(mode!=='play') return;
@@ -362,23 +378,89 @@ function placeAction() {
   const cell=place(world,state,blockHit(),id,(...p)=>view.mobOnBlock(...p));
   if(cell) changeBlock(cell,'place',Number(id));
 }
+function handlePad(now) {
+  let devices=[];
+  try { devices=navigator.getGamepads?.() ?? []; } catch {}
+  const oldIndex=gamepad.index;
+  const pad=gamepad.poll(devices,settings.deadzone/100,now);
+  if(oldIndex!==gamepad.index && oldIndex!==null) {
+    if(padMining) {mining=false;padMining=false;}
+    if(mode==='play' && padSession) pause('El mando se ha desconectado. Reconéctalo o reanuda con teclado y ratón.');
+  }
+  if(!pad) {
+    if(input==='pad') inputMethod('keyboard');
+    return null;
+  }
+  if(pad.active) inputMethod('pad');
+  if(mode==='play') {
+    if(pad.pressed(PAD.pause)) pause();
+    else if(pad.pressed(PAD.bag)) show('inventory');
+    else if(pad.pressed(PAD.journal)) show('journal');
+    if(mode!=='play') return null;
+    if(pad.pressed(PAD.accept)) jump=true;
+    if(pad.pressed(PAD.use)) useAction();
+    if(pad.pressed(PAD.place)) placeAction();
+    if(pad.pressed(PAD.mine)) {padMining=true;mining=true;mined=0;mineKey='';}
+    if(padMining && !pad.held[PAD.mine]) {padMining=false;mining=false;}
+    const step=Number(pad.pressed(PAD.next))-Number(pad.pressed(PAD.previous));
+    if(step) {select(state,state.selected+step);drawBar();}
+    return pad;
+  }
+  if(mode==='load') return null;
+  if(pad.pressed(PAD.pause) && mode==='pause' && ['pause','resume'].includes(panelName)) {
+    resume(true);
+    return null;
+  }
+  if(pad.pressed(PAD.back) && panel.open) {
+    back(true);
+    return null;
+  }
+  const scope=panel.open?panel:$('front');
+  const focusable=Array.from(scope.querySelectorAll('button:not(:disabled),input:not([hidden]):not(:disabled),select:not(:disabled)'));
+  const focused=document.activeElement;
+  const index=focusable.indexOf(focused);
+  const nav=pad.navigation;
+  if(nav && focusable.length) {
+    const step=nav===PAD.up || nav===PAD.left?-1:1;
+    if(index>=0 && (nav===PAD.left || nav===PAD.right) && (focused.type==='range' || focused.tagName==='SELECT')) {
+      if(focused.type==='range') focused.stepUp(step*(focused.dataset.setting==='deadzone'?1:5));
+      else focused.selectedIndex=clamp(focused.selectedIndex+step,0,focused.options.length-1);
+      settingsChange(focused);
+    } else {
+      const next=index<0?0:(index+step+focusable.length)%focusable.length;
+      focusable[next].focus();
+    }
+  }
+  if(pad.pressed(PAD.accept)) {
+    const target=focusable.includes(document.activeElement)?document.activeElement:focusable[0];
+    if(target?.dataset.action==='resume' || (target?.dataset.action==='back' && ['pause','resume'].includes(panelName))) resume(true);
+    else if(target?.matches('button,input[type=checkbox]')) target.click();
+    else target?.focus();
+  }
+  return null;
+}
 function tick(now) {
   requestAnimationFrame(tick);
   const dt=clamp((now-last)/1000,0,.1);
   last=now;
+  const wasPlaying=mode==='play';
+  const pad=!document.hidden && document.hasFocus()?handlePad(now):null;
+  if(!wasPlaying && mode==='play') return;
   if(!state || mode==='front' || mode==='load') {lastFrame=0;sound.update(settings,false);return;}
   const p=state.player;
   if(mode!=='play') {lastFrame=0;sound.update(settings,false);return;}
   physics+=dt;
-  const moving=keys.has('KeyW')||keys.has('KeyA')||keys.has('KeyS')||keys.has('KeyD')||
+  const moving=Boolean(pad?.move.some(Boolean)) || keys.has('KeyW')||keys.has('KeyA')||keys.has('KeyS')||keys.has('KeyD')||
     keys.has('ArrowUp')||keys.has('ArrowDown')||keys.has('ArrowLeft')||keys.has('ArrowRight');
   const held=(a,b)=>keys.has(a)||keys.has(b);
   const pan=Number(keys.has('KeyJ'))-Number(keys.has('KeyL'));
   const tilt=Number(keys.has('KeyI'))-Number(keys.has('KeyK'));
-  p.yaw=(p.yaw+pan*dt*1.6)%(Math.PI*2);
-  p.pitch=clamp(p.pitch+tilt*dt*1.25,-1.54,1.54);
+  const padLook=.45+settings.padSensitivity*.032;
+  p.yaw=(p.yaw+dt*(pan*1.6-(pad?.look[0]??0)*padLook))%(Math.PI*2);
+  p.pitch=clamp(p.pitch+dt*(tilt*1.25-(pad?.look[1]??0)*padLook*.78),-1.54,1.54);
+  const sprint=held('ShiftLeft','ShiftRight') || Boolean(pad?.held[PAD.sprint]);
   while(physics>=1/120) {
-    const move={x:+held('KeyD','ArrowRight')-held('KeyA','ArrowLeft'),z:+held('KeyW','ArrowUp')-held('KeyS','ArrowDown'),jump,sprint:held('ShiftLeft','ShiftRight')};
+    const move={x:+held('KeyD','ArrowRight')-held('KeyA','ArrowLeft')+(pad?.move[0]??0),z:+held('KeyW','ArrowUp')-held('KeyS','ArrowDown')-(pad?.move[1]??0),jump,sprint};
     const impacts=stepPlayer(world,p,move,1/120);
     jump=false;physics-=1/120;
     if(impacts) damage(impacts,'La caída te ha hecho daño.');
@@ -407,11 +489,11 @@ function tick(now) {
   lastBiome=b;lastLow=tide.low;
   danger=view.creatures(dt,p,state.elapsed,tide.low,damage,charging=>{
     sound.event(charging?'charge':'creature');
-    notify(charging?'La raspadura va a embestir.':'Oyes una raspadura cerca.',3.7,'danger');
+    notify(charging?'La raspadura va a embestir.':'Hay una raspadura cerca.',3.7,'danger');
   },settings.reduced);
   if(mode!=='play') return;
   stepClock+=dt;
-  if(moving && p.ground && stepClock>(held('ShiftLeft','ShiftRight')?.29:.42)) {
+  if(moving && p.ground && stepClock>(sprint?.29:.42)) {
     stepClock=0;
     const floor=world.get(Math.floor(p.x),Math.floor(p.y-.04),Math.floor(p.z));
     sound.event('step',BLOCKS[floor]?.tone??110);
@@ -428,7 +510,7 @@ function tick(now) {
 function settingsChange(el) {
   const key=el.dataset.setting;
   if(!key) return;
-  const value=el.type==='checkbox'?el.checked:['view','music','effects','sensitivity'].includes(key)?Number(el.value):el.value;
+  const value=el.type==='checkbox'?el.checked:['view','music','effects','sensitivity','padSensitivity','deadzone'].includes(key)?Number(el.value):el.value;
   settings=safeSettings({...settings,[key]:value});
   storeSettings();
   if(state && view) {
@@ -456,12 +538,12 @@ $('front').addEventListener('click',event=>{
 });
 panel.addEventListener('cancel',event=>{event.preventDefault();back();});
 panel.addEventListener('input',event=>settingsChange(event.target));
-function back() {
+function back(withPad=false) {
   if(mode==='defeat') return;
   if(mode==='front') {closePanel();return;}
   if(panelName==='settings' || panelName==='guide') {if(previousPanel==='front') closePanel(); else show(previousPanel);return;}
   if(['inventory','journal'].includes(panelName)) {show('pause');return;}
-  resume();
+  resume(withPad);
 }
 panel.addEventListener('submit',event=>{
   if(event.target.id!=='seed-form') return;
@@ -530,14 +612,21 @@ $('bar').addEventListener('click',event=>{
 });
 document.addEventListener('pointerlockchange',()=>{
   if(view && document.pointerLockElement===view.renderer.domElement && state && mode==='pause' && needClick) {
-    needClick=false;closePanel();mode='play';lockTime=performance.now();stop();pausedMessage='';return;
+    needClick=false;padSession=false;closePanel();mode='play';lockTime=performance.now();stop();pausedMessage='';return;
   }
-  if(mode==='play' && !document.pointerLockElement) pause();
+  if(mode==='play' && !padSession && !document.pointerLockElement) pause();
   if(mode!=='play' && document.pointerLockElement && !needClick) document.exitPointerLock();
 });
 document.addEventListener('pointerlockerror',lockFailed);
-window.addEventListener('blur',()=>{if(mode==='play') pause('La ventana perdió el foco.');});
-document.addEventListener('visibilitychange',()=>{if(document.hidden && mode==='play') pause('Has cambiado de pestaña.');});
+window.addEventListener('blur',()=>{
+  gamepad.index=null;
+  if(mode==='play') pause('La ventana perdió el foco.');
+});
+document.addEventListener('visibilitychange',()=>{
+  if(!document.hidden) return;
+  gamepad.index=null;
+  if(mode==='play') pause('Has cambiado de pestaña.');
+});
 window.addEventListener('pagehide',()=>{if(state && mode!=='load') save();});
 window.addEventListener('storage',event=>{
   if(event.key===slot && mode==='front') refreshMenu();
@@ -547,6 +636,8 @@ window.addEventListener('resize',()=>{
   if(view) view.resize(settings);
 });
 document.addEventListener('keydown',event=>{
+  inputMethod('keyboard');
+  if(event.isTrusted && mode!=='load') sound.start();
   if(mode!=='play') return;
   const code=event.code;
   if(code==='Tab') {event.preventDefault();return;}
@@ -568,11 +659,19 @@ document.addEventListener('keyup',event=>{
 });
 document.addEventListener('mousemove',event=>{
   if(mode!=='play' || document.pointerLockElement!==view.renderer.domElement || performance.now()-lockTime<200) return;
+  if(event.movementX || event.movementY) inputMethod('keyboard');
   const p=state.player,s=.00048+settings.sensitivity*.000037;
   p.yaw=(p.yaw-event.movementX*s)%(Math.PI*2);
   p.pitch=clamp(p.pitch-event.movementY*s,-1.54,1.54);
 });
 document.addEventListener('pointerdown',event=>{
+  inputMethod('keyboard');
+  if(event.isTrusted && mode!=='load') sound.start();
+  if(mode==='play' && padSession && event.target===view.renderer.domElement && event.button===0) {
+    pause();
+    resume();
+    return;
+  }
   if(mode!=='play' || document.pointerLockElement!==view.renderer.domElement) return;
   if(event.button===0) {mining=true;mined=0;mineKey='';}
   if(event.button===2) placeAction();

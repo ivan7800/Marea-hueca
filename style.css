@@ -227,3 +227,8 @@ dialog{width:min(640px,calc(100vw - 24px));background:linear-gradient(135deg,#1b
   .inventory{grid-template-columns:minmax(0,1fr)}
   .recipe{align-items:flex-start}
 }
+
+.using-pad button:focus,.using-pad input:focus,.using-pad select:focus {
+  outline:2px solid var(--gold);
+  outline-offset:4px;
+}

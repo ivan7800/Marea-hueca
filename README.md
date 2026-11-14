@@ -1,4 +1,4 @@
-# La Marea Hueca · 0.6.0
+# La Marea Hueca · 0.6.1
 
 Sandbox voxel de exploración, construcción y supervivencia con horror cósmico. El mar se retiró de una cuenca que conserva voces bajo la piedra. Puedes excavar, construir tu refugio o salir en busca de dos ecos y llevarlos al recinto enterrado bajo el observatorio.
 
@@ -89,3 +89,9 @@ La interfaz móvil muestra el menú y permite consultar ajustes. La partida requ
 ## Atribución
 
 Three.js r180 se distribuye bajo MIT. Véase [licencia de Three.js](vendor/THREE-LICENSE.txt). La ilustración, el atlas de bloques, las criaturas, las estructuras, la música y los efectos son originales y se producen con código. La aplicación emplea tipografías de sistema.
+
+### Mando en escritorio
+
+Usa un mando que el navegador exponga con la asignación estándar de la API Gamepad. Pulsa un botón para que el navegador lo detecte. La cruceta o la palanca izquierda recorren los menús, A confirma y B vuelve. En partida, las palancas mueven y miran, A salta, RT extrae, LT coloca, X interactúa, Y abre la mochila, LB/RB cambian de casilla, Vista abre el cuaderno y Menú pausa o reanuda. Mantén pulsada la palanca izquierda para correr. La sensibilidad y la zona muerta se ajustan en Ajustes.
+
+Para recuperar el ratón, haz clic sobre la escena o reanuda con ratón desde Pausa. Según el navegador, puede hacer falta un clic o una tecla para desbloquear el audio. Se ha verificado con un mando simulado en Chromium. La compatibilidad con mandos físicos no está comprobada.
