@@ -1,4 +1,4 @@
-# La Marea Hueca · 0.2.0
+# La Marea Hueca · 0.3.0
 
 Sandbox voxel de exploración, construcción y supervivencia con horror cósmico. El mar se retiró de una cuenca que conserva voces bajo la piedra. Puedes excavar, construir tu refugio o salir en busca de dos ecos y llevarlos al recinto enterrado bajo el observatorio.
 
@@ -35,6 +35,10 @@ Abre `http://127.0.0.1:4173/`. El proceso sirve archivos estáticos. El juego no
 - Los límenes se apartan del jugador. Las raspaduras persiguen a corta distancia, especialmente en bajamar. Construye barreras, aléjate o usa el gancho. Si caes, recuperas la salud al regresar y conservas los objetos y cambios.
 
 Los tres hallazgos del cuaderno son opcionales. Examínalos con F y usa sus materiales para fabricar fanales, el gancho o bloques de refugio. Los fanales colocados iluminan su entorno y disuaden a las raspaduras cercanas. Ante el aviso de embestida, toma distancia o usa el gancho.
+
+## Banda sonora
+
+El juego sintetiza su música en el navegador. **Donde rompe el junco** acompaña La Costra, **La vértebra de basalto** suena en El Espinazo, **Sedimento de luz** en La Salina Ciega y **El peso del agua ausente** entra al descender bajo el observatorio hacia la Cámara Sorda. Los encuentros y los hallazgos tienen motivos propios. Ajustes permite regular música y efectos por separado o silenciar ambos.
 
 ## Guardar y publicar
 

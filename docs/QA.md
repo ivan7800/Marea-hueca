@@ -39,3 +39,11 @@ El recorrido de aceptación utilizó I/J/K/L, M y N para cámara, extracción y 
 - Microbenchmark en Node 24.22.1, Linux x64, Intel Xeon Platinum 8573C virtualizado. Semilla MAREA-17, nueve chunks centrales precalentados, 25 mediciones alternas por versión. Mediana de 80,25 a 9,17 ms y p95 de 145,17 a 22,26 ms. Ambas versiones generaron 30.294 vértices.
 - La toma fija de La Costra, a 1280 × 720 CSS, calidad baja y nueve chunks, pasó de 22,5 a 24,3 FPS en sendas ejecuciones con Chromium 141 y SwiftShader (4,35 s nominales). La carga variable del entorno limita cualquier comparación de FPS y no representa hardware físico.
 - Pendientes de evaluación física: ratón bajo bloqueo de puntero, latencia audiovisual, GPU, Firefox, Safari, móvil y mando.
+
+## Verificación de 0.3.0
+
+- Chromium 141.0.7390.0 en Linux, escritorio virtual a 1280 × 720 CSS con WebGL 2 sobre SwiftShader. Recorrido por teclado desde lanzamiento hasta la Cámara Sorda: minería, construcción, mochila, fabricación, guardado, recarga, tres biomas, ecos y objetivo. Se probaron pausa, reanudación, cursor y pérdida de foco simulada. Menú y ajustes se probaron también con emulación de iPhone 13.
+- Se revisaron capturas del recorrido y tomas adicionales en calidad normal con motas, junto con una escena de dos fanales. El modo de calidad baja omite las motas.
+- El recorrido comprobó los cuatro cambios de tema, pausa, vuelta al menú, silencio total y persistencia de volúmenes independientes. Una prueba directa con Web Audio API y analizador registró señal para los cuatro temas, la modulación de amenaza y el motivo de hallazgo. El máximo observado fue de siete voces y se observó cero en pausa y silencio. La prueba de señal no incluyó escucha física por auriculares o altavoces.
+- Comparación exploratoria en vistas fijas, semilla MAREA-17, 4,35 s nominales por toma, calidad baja, distancia corta, procesador Xeon Platinum 8573C virtualizado. FPS 0.2.0 → 0.3.0: Costra 10,7 → 15,6; Espinazo 6,1 → 5,6; Salina 0,8 → 9,3; Cámara 1,6 → 11,3. En Salina y Cámara la base produjo solo cuatro y cinco intervalos respectivamente. La carga variable y el renderizado por software impiden atribuir esas diferencias al código o concluir rendimiento en ordenadores físicos.
+- Pendientes físicos: ratón con ventana visible, GPU, Safari, Firefox y evaluación auditiva de la mezcla.

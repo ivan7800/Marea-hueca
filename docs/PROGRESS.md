@@ -26,3 +26,12 @@ Para repetir la verificación ejecuta `npm ci`, `npm test`, `npm run build` y `n
 - La ampliación añade hallazgos opcionales y un diario de expedición. Los fanales construibles y el gancho dan al jugador maneras de escoger dónde y cómo afrontar un encuentro.
 - La malla consulta búferes por chunk y reutiliza los de los vecinos. En una prueba alterna de 25 reconstrucciones de nueve chunks ya cargados, pasó de 80,25 a 9,17 ms de mediana con los mismos 30.294 vértices. Esto mide CPU en Node, no FPS.
 - La entrada de Pages usa `dist/` sin redirección ni cambio de origen. Se mantienen la publicación dinámica por rama y la edición autónoma generada a partir del mismo código.
+
+
+## 0.3.0 · Luz y sonido de la cuenca
+
+- Base remota `6138106`. Las 11 pruebas de sistemas y la compilación de partida pasaron antes de la edición.
+- Cuatro patrones musicales por zona con frases de distinta duración y silencios. Fundido por pistas, filtro de bajamar, pulsos cuando una raspadura ya ha sido señalada y motivo breve para descubrimientos nuevos. Audio procedural, sin recursos externos.
+- La música limita el trabajo a una pista activa y desacopla la ganancia de las colas de cada zona. Un motor por página, hasta 16 voces simultáneas y liberación al terminar. Pausar detiene la programación de frases. Los ajustes de sonido conservan sus claves.
+- Bruma y tonos de luz por región, motas en una sola geometría y fanales mediante cuatro posiciones como máximo. El brillo de los fanales se calcula por distancia, sin sombras ni oclusión por bloques. La calidad baja limita el brillo a dos fanales y omite las motas.
+- Posturas de carga y recuperación en las raspaduras. La Cámara Sorda tiene movimiento localizado. No cambia el formato de las partidas.

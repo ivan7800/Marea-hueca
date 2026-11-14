@@ -1,5 +1,11 @@
 # Cambios
 
+## 0.3.0
+
+- Cuatro temas procedurales por zona, con una capa de tensión y un motivo para los hallazgos.
+- Transiciones graduales de luz, niebla y música. Los fanales tiñen de ámbar los bloques cercanos.
+- Motas ambientales y animaciones para leer la embestida, la retirada y la recuperación de las criaturas. Colocar y extraer bloques tienen respuestas diferenciadas.
+
 ## 0.2.0
 
 - Tres hallazgos con formas y materiales propios, interacciones únicas y cuaderno persistente.

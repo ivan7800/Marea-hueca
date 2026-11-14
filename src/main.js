@@ -53,7 +53,7 @@ function stop() {
 function show(name) {
   if(name==='new') seenAtCreation=disk();
   panelName=name;
-  if(mode==='play') {mode='pause';stop();document.exitPointerLock?.();}
+  if(mode==='play') {mode='pause';stop();sound.update(settings,false);document.exitPointerLock?.();}
   panel.setAttribute('aria-labelledby','panel-title');
   const templates={
     new:()=> `<form class="form-grid" id="seed-form"><label for="seed">Semilla del mundo</label><input type="text" id="seed" maxlength="64" required value="${DEFAULT_SEED}" spellcheck="false" autocomplete="off"><p>La misma semilla reconstruye el mismo terreno. ${disk()?'Ya hay una partida en esta ranura. Puedes descargarla antes de sustituirla.':'Empiezas en La Costra, frente al observatorio.'}</p>${disk()?'<label class="check"><input id="replace-save" type="checkbox" required> Sustituir la partida local</label>':''}<div class="panel-actions"><button type="submit" class="primary">Entrar en la cuenca</button><button data-action="random" type="button">Otra semilla</button>${disk()?'<button data-action="export" type="button">Exportar partida actual</button>':''}</div></form><p class="message"></p>`,
@@ -108,7 +108,7 @@ function menu() {
   if(mode==='defeat') recoverPlayer();
   if(state && mode!=='front' && !save() &&
       !window.confirm('La sesión no se pudo guardar. ¿Volver al menú con la última copia local?')) return;
-  mode='front';session++;stop();closePanel();
+  mode='front';session++;stop();sound.resetScore();closePanel();
   document.exitPointerLock?.();
   $('front').hidden=false;$('hud').hidden=true;$('loading').hidden=true;$('fatal').hidden=true;
   state=null;world=null;currentRaw=null;needClick=false;
@@ -117,7 +117,7 @@ function menu() {
 function pause(text='') {
   if(!state || !['play','pause'].includes(mode)) return;
   pausedMessage=text;
-  mode='pause';stop();
+  mode='pause';stop();sound.update(settings,false);
   if(document.pointerLockElement) document.exitPointerLock();
   show('pause');
 }
@@ -140,6 +140,7 @@ async function start(loaded,raw,entrance) {
   const ticket=++session;
   try {
     sound.start();
+    sound.resetScore();
     if(!view) {
       view=new View($('stage'));
       view.renderer.domElement.addEventListener('webglcontextlost',event=>{
@@ -225,20 +226,22 @@ function damage(amount,text) {
   p.health=Math.max(0,p.health-amount);damagePulse=settings.reduced?.23:.78;
   sound.event('hurt');notify(text);
   if(p.health===0) {
-    mode='defeat';stop();state.deaths++;
+    mode='defeat';stop();sound.update(settings,false);state.deaths++;
     document.exitPointerLock?.();show('defeat');
   }
 }
 function recoverPlayer() { recover(world,state);mode='pause';save();drawHUD(null); }
 function changeBlock(cell,event,id) {
   view.change(affectedChunks(cell[0],cell[2]));
-  view.burst(cell,settings.reduced);sound.event(event,BLOCKS[id].tone);
+  view.burst(cell,settings.reduced,event==='place');sound.event(event,BLOCKS[id].tone);
   revision++;drawBar();
 }
 function useAction() {
   const p=state.player,e=view.nearLandmark(p),id=activeItem();
   if(e) {
+    const previous=state.echoes.length, finished=state.finished;
     const text=advanceEcho(state,e.id);
+    if(state.echoes.length!==previous || state.finished!==finished) sound.discovery();
     sound.event('echo');notify(text??e.line,6);drawBar();return;
   }
   const site=nearbySite(world,p);
@@ -246,7 +249,7 @@ function useAction() {
     const found=state.discoveries.includes(site.id);
     if(found || discover(state,site,gain)) {
       notify(site.line,7);
-      if(!found) {sound.event('echo');drawBar();}
+      if(!found) {sound.event('echo');sound.discovery();drawBar();}
     } else notify('Libera espacio en la mochila para recoger el hallazgo.');
     return;
   }
@@ -269,9 +272,9 @@ function tick(now) {
   requestAnimationFrame(tick);
   const dt=clamp((now-last)/1000,0,.1);
   last=now;
-  if(!state || mode==='front' || mode==='load') {lastFrame=0;sound.update(settings,55,0,false);return;}
+  if(!state || mode==='front' || mode==='load') {lastFrame=0;sound.update(settings,false);return;}
   const p=state.player;
-  if(mode!=='play') {lastFrame=0;sound.update(settings,BIOMES[currentBiome(p)].pitch,0,false);return;}
+  if(mode!=='play') {lastFrame=0;sound.update(settings,false);return;}
   physics+=dt;
   const moving=keys.has('KeyW')||keys.has('KeyA')||keys.has('KeyS')||keys.has('KeyD')||
     keys.has('ArrowUp')||keys.has('ArrowDown')||keys.has('ArrowLeft')||keys.has('ArrowRight');
@@ -317,7 +320,8 @@ function tick(now) {
     const floor=world.get(Math.floor(p.x),Math.floor(p.y-.04),Math.floor(p.z));
     sound.event('step',BLOCKS[floor]?.tone??110);
   }
-  sound.update(settings,BIOMES[b].pitch,Math.max(danger,tide.low?.22:0),true,b===3);
+  const beneathObservatory=p.y<17 && Math.abs(p.x)<10 && p.z<-9 && p.z>-34;
+  sound.update(settings,true,beneathObservatory?3:b,danger,tide.low);
   if(damagePulse>0) {damagePulse=Math.max(0,damagePulse-dt*1.8);$('damage-layer').style.opacity=damagePulse.toFixed(2);}
   if(now>lastToast && $('notice').textContent) $('notice').textContent='';
   if(now-uiClock>67) {uiClock=now;drawHUD(hit);}
@@ -338,7 +342,7 @@ function settingsChange(el) {
       if(view.queue.length) view.process();
     }
   }
-  sound.update(settings,55,0,false);
+  sound.update(settings,false);
 }
 
 $('new').addEventListener('click',()=>show('new'));
@@ -496,6 +500,8 @@ if(qa) {
       glError:view.renderer.getContext().getError(), calls:view.renderer.info.render.calls,
       triangles:view.renderer.info.render.triangles,
       creatures:view.mobs.map(({kind,x,y,z})=>({kind,x,y,z}))}:{mode},
+    audio:()=>({context:sound.ctx?.state??null,scene:sound.scene,voices:sound.voices.size,
+      music:sound.musicLevel,effects:sound.effectsLevel}),
     frames:()=>measurements.slice(),
     clearFrames:()=>{measurements.length=0;lastFrame=0;}
   });

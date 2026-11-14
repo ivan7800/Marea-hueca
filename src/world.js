@@ -19,10 +19,10 @@ export const BLOCKS = [
 ];
 
 export const BIOMES = [
-  { name:'La Costra', note:'CALIZA · JUNCO', sky:'#364640', fog:'#3d5048', accent:'#aae0b7', pitch:55 },
-  { name:'El Espinazo', note:'BASALTO · NÁCAR', sky:'#343447', fog:'#3b3a4e', accent:'#aeb9ee', pitch:46.25 },
-  { name:'La Salina Ciega', note:'SAL VIOLETA · CONCHA', sky:'#553c4a', fog:'#594250', accent:'#eeb7c6', pitch:65.41 },
-  { name:'La Cámara Sorda', note:'CALIZA · NÁCAR', sky:'#171a24', fog:'#1f222a', accent:'#a4d6d1', pitch:41.2 }
+  { name:'La Costra', note:'CALIZA · JUNCO', sky:'#364640', fog:'#3d5048', accent:'#aae0b7' },
+  { name:'El Espinazo', note:'BASALTO · NÁCAR', sky:'#343447', fog:'#3b3a4e', accent:'#aeb9ee' },
+  { name:'La Salina Ciega', note:'SAL VIOLETA · CONCHA', sky:'#553c4a', fog:'#594250', accent:'#eeb7c6' },
+  { name:'La Cámara Sorda', note:'CALIZA · NÁCAR', sky:'#171a24', fog:'#1f222a', accent:'#a4d6d1' }
 ];
 
 export const LANDMARKS = [

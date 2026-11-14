@@ -6,6 +6,13 @@ import {BIOMES, CHUNK, HALF, LANDMARKS, clamp, landmarkPosition, randomAt, surfa
 
 export const V = (x=0,y=0,z=0) => new T.Vector3(x,y,z);
 const unitBox=new T.BoxGeometry(1,1,1);
+const wrapNear=(coordinate,center,span)=>coordinate-Math.floor((coordinate-center)/span+.5)*span;
+const ATMOSPHERE=[
+  {air:.026,dust:'#b5ddc0',light:'#f4f7df',shade:'#e0eee4',rise:.21},
+  {air:.034,dust:'#adb6d9',light:'#d5e0ff',shade:'#d4d9f1',rise:-.09},
+  {air:.039,dust:'#e8b6c4',light:'#ffe6e2',shade:'#f0dae2',rise:.34},
+  {air:.053,dust:'#9dd0d1',light:'#a9d8d2',shade:'#a9c2c5',rise:.12}
+];
 const mat=(color,emissive=0)=>new T.MeshStandardMaterial({color,roughness:.86,emissive,emissiveIntensity:.55});
 const rock=mat('#526c65'), metal=mat('#343c45'), bone=mat('#9c9087'), fur=mat('#434450');
 const pearl=mat('#aff6d9','#498f8c'), iris=mat('#d994a8','#a64661');
@@ -89,13 +96,14 @@ function spawnMobs(scene,world) {
     const g=new T.Group();
     scene.add(g);
     const passive=kind==='limen';
+    const torso=new T.Group();g.add(torso);
     const body=new T.Mesh(new T.OctahedronGeometry(passive?.46:.65),passive?bone:fur);
     body.scale.set(passive?1.2:1,passive?.58:1.15,passive?1.6:1.27);
-    body.position.y=passive?.62:.9;g.add(body);
-    box(g,passive?pearl:iris,0,body.position.y,.45,.44,.14,.3);
+    body.position.y=passive?.62:.9;torso.add(body);
+    box(torso,passive?pearl:iris,0,body.position.y,.45,.44,.14,.3);
     if(!passive) {
       for(const side of [-1,1]) {
-        const spine=box(g,bone,side*.27,1.19,-.16,.12,.61,.16);
+        const spine=box(torso,bone,side*.27,1.19,-.16,.12,.61,.16);
         spine.rotation.z=side*-.39;
       }
     }
@@ -105,7 +113,7 @@ function spawnMobs(scene,world) {
       p.rotation.z=side*(passive?.55:.38);
       legs.push(p);
     }
-    return {kind,g,legs,homeX:x,homeZ:z,x,z,y:surface(world,x,z),phase:i*1.7,cool:0,flee:0,noticed:false};
+    return {kind,g,torso,legs,homeX:x,homeZ:z,x,z,y:surface(world,x,z),phase:i*1.7,cool:0,flee:0,noticed:false};
   });
 }
 
@@ -163,9 +171,15 @@ export class View {
     this.sky.renderOrder=-2;this.scene.add(this.sky);
     this.camera=new T.PerspectiveCamera(71,1,.045,100);
     this.camera.rotation.order='YXZ';
-    this.scene.add(new T.HemisphereLight('#d6f9eb','#634d62',2.15));
-    const light=new T.DirectionalLight('#fff0d3',1.45);
-    light.position.set(-30,46,15);this.scene.add(light);
+    this.fill=new T.HemisphereLight('#d6f9eb','#634d62',2.15);
+    this.keyLight=new T.DirectionalLight('#fff0d3',1.45);
+    this.keyLight.position.set(-30,46,15);
+    this.scene.add(this.fill,this.keyLight);
+    this.white=new T.Color();
+    this.terrainShade=new T.Color();
+    this.targetShade=new T.Color();
+    this.targetLight=new T.Color();
+    this.targetDust=new T.Color();
     const tex=new T.CanvasTexture(atlas());
     tex.colorSpace=T.SRGBColorSpace;tex.magFilter=T.NearestFilter;tex.minFilter=T.NearestFilter;
     tex.generateMipmaps=false;
@@ -173,16 +187,18 @@ export class View {
     this.lanterns=Array.from({length:4},()=>new T.Vector4(0,0,0,0));
     this.material.onBeforeCompile=shader=>{
       shader.uniforms.mareaLanterns={value:this.lanterns};
+      shader.uniforms.mareaShade={value:this.terrainShade};
       shader.vertexShader='varying vec3 mareaPosition;\n'+shader.vertexShader.replace(
         '#include <begin_vertex>','#include <begin_vertex>\nmareaPosition = position;');
-      shader.fragmentShader='varying vec3 mareaPosition;\nuniform vec4 mareaLanterns[4];\n'+
+      shader.fragmentShader='varying vec3 mareaPosition;\nuniform vec4 mareaLanterns[4];\nuniform vec3 mareaShade;\n'+
         shader.fragmentShader.replace('#include <color_fragment>',`
           #include <color_fragment>
+          diffuseColor.rgb *= mareaShade;
           vec3 lanternGlow = vec3(0.);
           if(mareaLanterns[0].w > 0.) for(int i=0;i<4;i++){
             vec3 offset = mareaPosition - mareaLanterns[i].xyz;
-            float glow = max(0.,1. - dot(offset,offset) * .09);
-            lanternGlow += glow * glow * mareaLanterns[i].w * vec3(.39,.84,.70);
+            float glow = max(0.,1. - dot(offset,offset) * .0625);
+            lanternGlow += glow * glow * mareaLanterns[i].w * vec3(.91,.76,.49);
           }
           diffuseColor.rgb += min(lanternGlow,vec3(.6)) * (.24 + diffuseColor.rgb * .34);
         `);
@@ -195,6 +211,20 @@ export class View {
     this.chunkGroup=new T.Group();this.scene.add(this.chunkGroup);
     this.decor=new T.Group();this.scene.add(this.decor);
     this.meshes=new Map();this.queue=[];
+    this.dustHeight=0;
+    this.dustRise=0;
+    this.dustOffsets=[];
+    for(let i=0;i<36;i++) this.dustOffsets.push(V(
+      randomAt(42,i,4)*20,randomAt(42,i,5)*10,randomAt(42,i,6)*20));
+    const dustGeometry=new T.BufferGeometry();
+    this.dustPosition=new T.BufferAttribute(new Float32Array(this.dustOffsets.length*3),3);
+    this.dustPosition.setUsage(T.DynamicDrawUsage);
+    dustGeometry.setAttribute('position',this.dustPosition);
+    this.dust=new T.Points(dustGeometry,new T.PointsMaterial({
+      color:'#b5ddc0',size:.027,transparent:true,opacity:.31,depthWrite:false
+    }));
+    this.dust.frustumCulled=false;
+    this.scene.add(this.dust);
     this.parts=[];
     this.partMaterial=new T.MeshBasicMaterial({color:'#c8d0ad',fog:true});
     for(let i=0;i<16;i++) {
@@ -215,6 +245,8 @@ export class View {
 
   start(world) {
     this.world=world;
+    this.terrainShade.set('#eaf3eb');
+    this.dustHeight=0;this.dustRise=0;
     this.decor.traverse(object=>{
       if(object.geometry && object.geometry!==unitBox) object.geometry.dispose();
       if(object.userData.ownedMaterial) object.material.dispose();
@@ -279,13 +311,14 @@ export class View {
     for(const key of keys) if(this.meshes.has(key)) this.rebuild(key);
   }
 
-  burst(cell,reduced) {
+  burst(cell,reduced,placing=false) {
     if(reduced) return;
-    for(let i=0;i<this.parts.length;i++) {
+    for(let i=0;i<(placing?7:this.parts.length);i++) {
       const part=this.parts[i];
       part.t=.2+Math.random()*.23;
       part.mesh.position.set(cell[0]+.5,cell[1]+.6,cell[2]+.5);
-      part.v.set((Math.random()-.5)*3,Math.random()*2.9,(Math.random()-.5)*3);
+      const speed=placing?1.3:3;
+      part.v.set((Math.random()-.5)*speed,Math.random()*speed,(Math.random()-.5)*speed);
     }
   }
 
@@ -348,7 +381,15 @@ export class View {
       }
       m.g.position.set(m.x,m.y,m.z);
       m.g.rotation.y=Math.atan2(tx,tz);
-      for(let i=0;i<m.legs.length;i++) m.legs[i].rotation.x=reduced?0:Math.sin(t*(active?13:7)+i*1.9)*.32;
+      const windup=Math.min(1,(m.charge||0)/.48);
+      const recoil=Math.max(0,(m.cool-1.9)/.35);
+      m.torso.rotation.x=-windup*.29+recoil*.19;
+      m.torso.position.y=windup*.16-recoil*.09;
+      const gait=retreat?15:active?11:5;
+      const swing=windup || recoil ? .09 : retreat?.39:.26;
+      for(let i=0;i<m.legs.length;i++) {
+        m.legs[i].rotation.x=reduced?0:Math.sin(t*gait+i*1.9+m.phase)*swing;
+      }
     }
     return danger;
   }
@@ -364,7 +405,29 @@ export class View {
         else uniform.set(0,0,0,0);
       });
     }
-    const b=BIOMES[biome];
+    const b=BIOMES[biome], air=ATMOSPHERE[biome];
+    this.targetShade.set(air.shade).lerp(this.white,.32);
+    this.targetLight.set(air.light);
+    this.targetDust.set(air.dust);
+    const backdrop=1-Math.exp(-dt*1.8);
+    this.terrainShade.lerp(this.targetShade,backdrop);
+    this.fill.color.lerp(this.targetLight,backdrop);
+    this.keyLight.color.lerp(this.targetLight,backdrop);
+    this.keyLight.intensity=T.MathUtils.lerp(this.keyLight.intensity,biome===3?.65:low?.85:1.45,backdrop);
+    this.dust.material.color.lerp(this.targetDust,backdrop);
+    this.dust.visible=!settings.reduced && settings.resolution!=='low';
+    if(this.dust.visible) {
+      const count=biome===3?15:36;
+      this.dustRise=T.MathUtils.lerp(this.dustRise,air.rise,backdrop);
+      this.dustHeight=(this.dustHeight+dt*this.dustRise)%10;
+      this.dust.geometry.setDrawRange(0,count);
+      for(let i=0;i<count;i++) {
+        const o=this.dustOffsets[i];
+        this.dustPosition.setXYZ(i,wrapNear(o.x+t*.13,p.x,20),
+          wrapNear(o.y+this.dustHeight,p.y+2,10),wrapNear(o.z+Math.sin(t*.11+i)*.8,p.z,20));
+      }
+      this.dustPosition.needsUpdate=true;
+    }
     this.targetSky.set(b.sky).multiplyScalar(low?.57:1);
     this.targetFog.set(b.fog).multiplyScalar(low?.53:1);
     const w=Math.min(1,dt*2.3);
@@ -374,7 +437,7 @@ export class View {
     this.sky.material.uniforms.lunar.value.set(biome===3?'#292735':'#b9d7be');
     this.sky.position.set(p.x,p.y+1.62,p.z);
     this.scene.fog.color.lerp(this.targetFog,w);
-    this.scene.fog.density=biome===3?.044:settings.view===2?.037:.027;
+    this.scene.fog.density=T.MathUtils.lerp(this.scene.fog.density,air.air+(low?.007:0)+(settings.view===2?.008:0),backdrop);
     this.starMat.opacity=low?.78:.44;
     const bob=!settings.reduced && moving && p.ground?Math.sin(t*12)*.034:0;
     this.camera.position.set(p.x,p.y+1.62+bob,p.z);
@@ -386,6 +449,10 @@ export class View {
       for(const e of this.landmarks) {
         e.eye.rotation.set(t*.24,t*.49,.34);
         e.inner.rotation.y=.3+Math.sin(t*.6)*.28;
+        if(e.id==='vault') {
+          e.inner.scale.set(1+.095*Math.sin(t*.37),1+.055*Math.cos(t*.44),1);
+          e.eye.position.y=e.inner.position.y+.05+Math.sin(t*.65)*.08;
+        }
       }
     }
     for(const part of this.parts) {

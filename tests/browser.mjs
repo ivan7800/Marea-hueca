@@ -22,6 +22,7 @@ page.on('response',response=>{if(response.status()>=400) errors.push(response.st
 const button=name=>page.getByRole('button',{name,exact:true});
 const snap=async name=>page.screenshot({path:resolve(screenshots,name+'.png'),timeout:12000});
 const read=()=>page.evaluate(()=>window.mareaQA.state());
+const audio=()=>page.evaluate(()=>window.mareaQA.audio());
 const until=(f,a)=>page.waitForFunction(f,a,{timeout:12_000});
 const wait=ms=>page.waitForTimeout(ms);
 const key=async(code,ms)=>{await page.keyboard.down(code);try{await wait(ms);}finally{await page.keyboard.up(code);}};
@@ -77,6 +78,7 @@ try {
   await page.goto(origin+'?qa=1');
   await button('Nueva partida').waitFor();
   assert.equal(await button('Continuar').isEnabled(),false);
+  assert.equal((await audio()).context,null);
   await snap('01-menu');
   await button('Ajustes').click();
   await page.getByLabel('Reducir movimiento y efectos').check();
@@ -92,6 +94,8 @@ try {
   await until(()=>window.mareaQA.state().todo===0);
   await snap('02-inicio-costra');
   await measure('Costra, vista fija y resolución baja');
+  await until(()=>window.mareaQA.audio().context==='running' && window.mareaQA.audio().scene===0);
+  assert.ok((await audio()).voices<=16);
   const before=(await read()).player;
   await key('w',460);await wait(140);
   assert.ok((await read()).player.z<before.z-.8);
@@ -123,6 +127,17 @@ try {
   await snap('05-mochila');
   await page.locator('dialog [data-action=pause]').click();
   await snap('06-pausa');
+  await until(()=>window.mareaQA.audio().voices===0);
+  assert.equal((await audio()).music,0);
+  await button('Ajustes').click();
+  const music=page.getByLabel('Música'), effects=page.getByLabel('Efectos',{exact:true});
+  await music.fill('31');
+  await effects.fill('46');
+  assert.equal((await audio()).effects,.46);
+  await page.getByLabel('Silencio total').check();
+  assert.equal((await audio()).effects,0);
+  await page.getByLabel('Silencio total').uncheck();
+  await button('Volver').click();
   await button('Guardar').click();
   await page.getByText('Partida guardada en este navegador.').waitFor();
   const progress=await read();
@@ -134,6 +149,7 @@ try {
   await resume('Capturar cursor');
   assert.deepEqual((await read()).edits,progress.edits);
   assert.equal((await read()).bag.chisel,1);
+  await until(()=>window.mareaQA.audio().music===.31 && window.mareaQA.audio().effects===.46);
   await snap('07-recargada');
   await pause();
   assert.equal((await read()).locked,null);
@@ -155,6 +171,7 @@ try {
   await walk(-25,.5);
   await walk(-27,-2.4);
   await walk(-27,-3.7);
+  await until(()=>window.mareaQA.audio().scene===1);
   await snap('08-espinazo-raspadura');
   await page.keyboard.press('f');
   assert.deepEqual((await read()).echoes,['spine']);
@@ -165,6 +182,7 @@ try {
   assert.equal((await read()).biome,2);
   await walk(27.2,1.2);
   await turn(-Math.PI/2);
+  await until(()=>window.mareaQA.audio().scene===2);
   await snap('09-salina');
   await measure('Salina, vista fija y resolución baja');
   await page.keyboard.press('f');
@@ -174,12 +192,14 @@ try {
   await walk(.5,-22.7,{noJump:true});
   assert.equal((await read()).biome,3);
   await turn(0,-.10);
+  await until(()=>window.mareaQA.audio().scene===3);
   await snap('10-camara');
   await page.keyboard.press('f');
   assert.equal((await read()).finished,true);
   await snap('11-eco-devuelto');
   await pause();
   await button('Volver al menú').click();
+  await until(()=>window.mareaQA.audio().voices===0);
   await button('Créditos').click();
   const input=page.locator('#import-file');
   await input.setInputFiles({name:'corrupto.json',mimeType:'application/json',buffer:Buffer.from('{')});
