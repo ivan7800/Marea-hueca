@@ -144,7 +144,7 @@ function makeChunk(world,cx,cz) {
       }
       if (Math.abs(x-2)<=1 && z===-26 && y===8) id=7;
       if(site && y>0) {
-        if(y<site.y && !id) id=site.id==='boyas'?1:3;
+        if(y<site.y && !id) id=site.id==='aljibe'?5:site.id==='boyas'?1:3;
         else if(y>=site.y) id=settlementVoxel(site,x,y,z)??0;
       } else if(approach && y>0) {
         if(y===approach.y) id=7;
@@ -158,12 +158,12 @@ function makeChunk(world,cx,cz) {
 }
 
 export class World {
-  constructor(seed,layout=[0,0]) {
+  constructor(seed,layout=[0,0,0]) {
     this.seed=seed;
     this.number=hashSeed(seed);
-    this.layout=[...layout];
+    this.layout=SETTLEMENTS.map((_,i)=>layout[i]??-1);
     this.settlementFloors=SETTLEMENTS.map((site,i)=>{
-      const anchor=site.anchors[layout[i]];
+      const anchor=site.anchors[this.layout[i]];
       if(!anchor) return 0;
       const [x,z]=anchor;
       return column(this.number,x+site.entrance,z+site.depth).h;

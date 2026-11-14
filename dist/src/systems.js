@@ -24,7 +24,7 @@ export const RECIPES = [
   { id:'ward', count:1, costs:{8:1,5:2}, note:'F · Protección temporal alrededor del punto de uso.' }
 ];
 export const DEFAULT_SETTINGS={music:58, effects:68, sensitivity:50, view:3, mute:false, reduced:false, resolution:'auto'};
-export const SAVE_VERSION=3;
+export const SAVE_VERSION=4;
 export const MAX_STACK=999;
 export const SLOTS=8;
 export const SAVE_KEY='marea-hueca:slot:v1';
@@ -232,7 +232,7 @@ export function decode(raw) {
   let data;
   try { data=JSON.parse(raw); } catch { throw new Error('La partida no contiene JSON válido.'); }
   const d=data;
-  if (![1,2,SAVE_VERSION].includes(d?.version)) throw new Error('La versión de la partida no es compatible.');
+  if (![1,2,3,SAVE_VERSION].includes(d?.version)) throw new Error('La versión de la partida no es compatible.');
   const fail=()=>{throw new Error('La partida contiene datos inválidos.');};
   if (typeof d.seed!=='string' || !d.seed.trim() || d.seed.length>64 || !Array.isArray(d.position) ||
       d.position.length!==5 || !d.position.every(Number.isFinite) || Math.abs(d.position[0])>=HALF ||
@@ -241,17 +241,24 @@ export function decode(raw) {
       !Number.isFinite(d.health) || d.health<0 || d.health>100 || !d.inventory ||
       typeof d.inventory!=='object' || Array.isArray(d.inventory)) fail();
   const discoveries=d.version===1?[]:d.discoveries;
-  const discoverySites=d.version===3?[...SITES,...SETTLEMENTS]:SITES;
+  const discoverySites=d.version>=3?[...SITES,...(d.version===3?SETTLEMENTS.slice(0,2):SETTLEMENTS)]:SITES;
   if (!Array.isArray(discoveries) || discoveries.length>discoverySites.length ||
       new Set(discoveries).size!==discoveries.length || discoveries.some(id=>!discoverySites.some(site=>site.id===id))) fail();
   if(!Array.isArray(d.edits) || d.edits.length>EDIT_LIMIT) fail();
   const editPattern=/^-?\d{1,2},\d{1,2},-?\d{1,2}$/;
   if(d.edits.some(edit=>!Array.isArray(edit) || edit.length!==2 || typeof edit[0]!=='string' || !editPattern.test(edit[0]))) fail();
-  const layout=d.version===3?d.layout:fittingLayout(d.edits,d.position);
+  let layout=d.layout;
+  if(d.version<4) {
+    const available=fittingLayout(d.edits,d.position);
+    if(d.version===3) {
+      if(!Array.isArray(layout) || layout.length!==2) fail();
+      layout=[...layout,available[2]];
+    } else layout=available;
+  }
   if(!Array.isArray(layout) || layout.length!==SETTLEMENTS.length ||
       layout.some((index,i)=>!Number.isInteger(index) || index< -1 || index>=SETTLEMENTS[i].anchors.length) ||
       SETTLEMENTS.some((site,i)=>layout[i]===-1 && discoveries.includes(site.id))) fail();
-  const needleReady=d.version===3?d.needleReady:0, ward=d.version===3?d.ward:null;
+  const needleReady=d.version>=3?d.needleReady:0, ward=d.version>=3?d.ward:null;
   if(!Number.isFinite(needleReady) || needleReady<0 || needleReady>d.elapsed+8 ||
       (ward!==null && (!ward || ![ward.x,ward.y,ward.z,ward.until].every(Number.isFinite) ||
       Math.abs(ward.x)>=HALF || Math.abs(ward.z)>=HALF || ward.y<0 || ward.y>=HEIGHT ||

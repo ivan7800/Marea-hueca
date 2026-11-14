@@ -3,16 +3,16 @@ import {SITES, sitePosition, nearbyLanterns} from './expeditions.js';
 import {trace} from './systems.js';
 import * as T from '../vendor/three.module.min.js';
 import {atlas,meshChunk} from './mesh.js';
-import {BIOMES, CHUNK, HALF, LANDMARKS, clamp, landmarkPosition, randomAt, surface} from './world.js';
+import {BLOCKS, BIOMES, CHUNK, HALF, LANDMARKS, clamp, landmarkPosition, randomAt, surface} from './world.js';
 
 export const V = (x=0,y=0,z=0) => new T.Vector3(x,y,z);
 const unitBox=new T.BoxGeometry(1,1,1);
 const wrapNear=(coordinate,center,span)=>coordinate-Math.floor((coordinate-center)/span+.5)*span;
 const ATMOSPHERE=[
-  {air:.026,dust:'#b5ddc0',light:'#f4f7df',shade:'#e0eee4',rise:.21},
-  {air:.034,dust:'#adb6d9',light:'#d5e0ff',shade:'#d4d9f1',rise:-.09},
-  {air:.039,dust:'#e8b6c4',light:'#ffe6e2',shade:'#f0dae2',rise:.34},
-  {air:.053,dust:'#9dd0d1',light:'#a9d8d2',shade:'#a9c2c5',rise:.12}
+  {air:.023,dust:'#cbd3a1',light:'#faf0cb',shade:'#e5f1de',rise:.21},
+  {air:.029,dust:'#9cb4ec',light:'#bbcfff',shade:'#c7d5fa',rise:-.09},
+  {air:.032,dust:'#f0bbcc',light:'#ffe0cd',shade:'#ffe3e5',rise:.34},
+  {air:.046,dust:'#9dd0d1',light:'#a9d8d2',shade:'#a9c2c5',rise:.12}
 ];
 const mat=(color,emissive=0)=>new T.MeshStandardMaterial({color,roughness:.86,emissive,emissiveIntensity:.55});
 const rock=mat('#526c65'), metal=mat('#343c45'), bone=mat('#9c9087'), fur=mat('#434450');
@@ -339,11 +339,13 @@ export class View {
     for(const key of keys) if(this.meshes.has(key)) this.rebuild(key);
   }
 
-  burst(cell,reduced,placing=false) {
+  burst(cell,reduced,placing,id) {
     if(reduced) return;
+    this.partMaterial.color.set(BLOCKS[id].light);
     for(let i=0;i<(placing?7:this.parts.length);i++) {
       const part=this.parts[i];
-      part.t=.2+Math.random()*.23;
+      part.t=.16+Math.random()*.22;
+      part.mesh.scale.setScalar(placing?.045:.065);
       part.mesh.position.set(cell[0]+.5,cell[1]+.6,cell[2]+.5);
       const speed=placing?1.3:3;
       part.v.set((Math.random()-.5)*speed,Math.random()*speed,(Math.random()-.5)*speed);

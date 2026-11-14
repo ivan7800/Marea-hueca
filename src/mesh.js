@@ -81,6 +81,24 @@ export function atlas() {
       }
       ctx.stroke();
     }
+    ctx.globalAlpha=.5;
+    ctx.lineWidth=1.5;
+    ctx.beginPath();
+    if(id===1 || id===3) {
+      for(let j=0;j<4;j++) {
+        const left=9+j*15;
+        ctx.moveTo(left,0);ctx.lineTo(left-4,20);ctx.lineTo(left+4,31);
+        ctx.lineTo(left-1,52);ctx.lineTo(left-3,64);
+      }
+    } else if(id===5 || id===6) {
+      for(let j=0;j<9;j++) {
+        const a=randomAt(id,j,40)*64,b=randomAt(id,j,41)*64;
+        ctx.moveTo(a-4,b);ctx.lineTo(a,b-6);ctx.lineTo(a+4,b);ctx.lineTo(a,b+6);ctx.closePath();
+      }
+    } else if(id===7) {
+      for(let j=0;j<4;j++) ctx.rect(6+j*15,27+(j%2)*10,4,4);
+    }
+    ctx.stroke();
     if(id===8) {
       ctx.globalAlpha=.84; ctx.lineWidth=2;
       ctx.strokeRect(3,3,58,58);

@@ -1,5 +1,13 @@
 # Cambios
 
+## 0.6.0
+
+- Aljibe de las Agujas en la Salina Ciega, con suministros y una entrada señalada por un arco.
+- Atlas con vetas y cristales, bruma más despejada y partículas del color del material al minar o construir.
+- Pasos e impactos con ruido filtrado por material. Señales propias para suministros y umbral.
+- Materiales disponibles en las recetas, objeto equipado marcado y estado de guardado visible.
+- Guardado v4. Al abrir una partida v3, el aljibe busca una huella libre de ediciones y de la posición guardada.
+
 ## 0.5.0
 
 - Portada escénica con luna fracturada, trazas de bajamar, composición tipográfica y un pulso visual lento que respeta movimiento reducido.

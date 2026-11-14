@@ -52,3 +52,10 @@ Para repetir la verificación ejecuta `npm ci`, `npm test`, `npm run build` y `n
 - Base de GitHub `4b1a465`, idéntica a la copia local 0.4.0. Suite inicial de 14 pruebas y ambas compilaciones correctas. Pages se sirve por rama desde la raíz; no hay workflow de usuario.
 - La escena Canvas de portada conserva el observatorio y añade señales celestes y contornos de bajamar. CSS anima solo la respiración lenta de la ilustración, con movimiento reducido respetado. No se inicia otro bucle de dibujo.
 - Menú y HUD reorganizados con estado de partida, guía de controles, estado de salud en texto y mejores paneles. Corrección de retorno desde Ajustes en portada.
+
+## 0.6.0 · Estratos de bajamar
+
+- Base auditada: `main` y Pages en `2e99c38` (0.5.0), despliegue por rama correcto. Las 14 pruebas de sistemas y las dos compilaciones pasaron antes de editar. El recorrido de navegador de referencia se inició sobre esa compilación.
+- La ampliación se concentra en una estación de la Salina, materiales y transiciones atmosféricas, respuesta audiovisual y lectura de la mochila. Se conservarán las huellas de los dos asentamientos existentes.
+- Implementados el Aljibe de las Agujas, el atlas de materiales, la bruma por bioma, el audio de impactos y pasos, y los estados de equipo y guardado. El esquema 4 conserva las dos huellas de v3 y añade una tercera solo si es compatible con la partida.
+- Candidata de revisión. La validación de navegador quedó bloqueada en este entorno antes de cargar el juego: Chromium no puede crear su socket de proceso. Ver QA.
