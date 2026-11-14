@@ -48,6 +48,8 @@ Los tres hallazgos del cuaderno son opcionales. Examínalos con F y usa sus mate
 
 La portada presenta el observatorio y el firmamento de la cuenca. Controles abre la guía de teclas desde la portada o la pausa; Ajustes agrupa audio, sensibilidad, resolución y movimiento reducido. El estado de la partida local se muestra antes de elegir Continuar. Durante el juego, la salud numérica, la herramienta equipada, la brújula, la misión opcional y los mensajes de interacción permanecen visibles.
 
+La vegetación de los tres biomas es decorativa y no bloquea la construcción. Los escarpes del horizonte marcan el borde de la cuenca, cuyo tamaño continúa siendo de 96 × 96 bloques.
+
 ## Banda sonora
 
 El juego sintetiza su música en el navegador. **Donde rompe el junco** acompaña La Costra, **La vértebra de basalto** suena en El Espinazo, **Sedimento de luz** en La Salina Ciega y **El peso del agua ausente** entra al descender bajo el observatorio hacia la Cámara Sorda. Los encuentros y los hallazgos tienen motivos propios. Ajustes permite regular música y efectos por separado o silenciar ambos.

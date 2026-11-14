@@ -273,6 +273,7 @@ function damage(amount,text) {
 function recoverPlayer() { recover(world,state);mode='pause';save();drawHUD(null); }
 function changeBlock(cell,event,id) {
   view.change(affectedChunks(cell[0],cell[2]));
+  view.updatePlants(cell[0],cell[2]);
   view.burst(cell,settings.reduced,event==='place',id);
   sound.event(event,BLOCKS[id].tone);
   if(!$('notice').textContent || $('notice').dataset.kind==='edit') {

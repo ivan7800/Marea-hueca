@@ -3,7 +3,7 @@ import {SITES, sitePosition, nearbyLanterns} from './expeditions.js';
 import {trace} from './systems.js';
 import * as T from '../vendor/three.module.min.js';
 import {atlas,meshChunk} from './mesh.js';
-import {BLOCKS, BIOMES, CHUNK, HALF, LANDMARKS, clamp, landmarkPosition, randomAt, surface} from './world.js';
+import {BLOCKS, BIOMES, CHUNK, HALF, biomeAt, LANDMARKS, clamp, landmarkPosition, randomAt, surface} from './world.js';
 
 export const V = (x=0,y=0,z=0) => new T.Vector3(x,y,z);
 const unitBox=new T.BoxGeometry(1,1,1);
@@ -143,7 +143,8 @@ export class View {
       horizon:{value:new T.Color('#455b4e')},
       zenith:{value:new T.Color('#17222c')},
       lunar:{value:new T.Color('#b9d7be')},
-      direction:{value:V(-13,16.4,-76).normalize()}
+      direction:{value:V(-13,16.4,-76).normalize()},
+      drift:{value:0}
     };
     this.sky=new T.Mesh(new T.SphereGeometry(91,20,12),new T.ShaderMaterial({
       uniforms,side:T.BackSide,depthWrite:false,
@@ -159,12 +160,15 @@ export class View {
         uniform vec3 zenith;
         uniform vec3 lunar;
         uniform vec3 direction;
+        uniform float drift;
         void main(){
           vec3 d=normalize(ray);
           float up=clamp(d.y,0.,1.);
           vec3 color=mix(horizon,zenith,smoothstep(.01,.70,up));
           float moon=max(dot(direction,d),0.);
           color+=lunar*pow(moon,35.)*.11;
+          float band=sin(d.x*18. + d.z*12. + up*32. + drift);
+          color+=lunar*(smoothstep(.87,.98,band)-.5)*.025*(1.-up);
           gl_FragColor=vec4(color,1.);
           #include <colorspace_fragment>
         }`
@@ -269,6 +273,7 @@ export class View {
       marker.position.set(x,y+.67,z);
       this.decor.add(marker);
     }
+    this.buildLandscape(world);
     this.lightClock=0;
     this.mobs=spawnMobs(this.decor,world);
 
@@ -301,6 +306,58 @@ export class View {
     const stars=new T.BufferGeometry().setAttribute('position',new T.Float32BufferAttribute(points,3));
     if(!this.starMat) this.starMat=new T.PointsMaterial({color:'#afc8c2',size:.12,fog:false,transparent:true,opacity:.44});
     this.decor.add(new T.Points(stars,this.starMat));
+  }
+
+  buildLandscape(world) {
+    const forms=[['#aca984',.08,1.25],['#7786a3',.16,.72],['#c49eaf',.13,.85]];
+    this.plants=[];
+    for(let biome=0;biome<3;biome++) {
+      const data=[];
+      for(let z=-HALF+3;z<HALF-3;z+=2) for(let x=-HALF+3;x<HALF-3;x+=2) {
+        if(biomeAt(x,20,z)!==biome || Math.abs(z)<3) continue;
+        if(randomAt(world.number+791,x,z)<(biome===0?.78:.9)) continue;
+        if(world.settlements.some(site=>x>=site.x-2 && x<site.x+site.width+2 && z>=site.z-2 && z<site.z+site.depth+2)) continue;
+        const y=surface(world,x,z);
+        if(y<9 || y>27 || !world.get(x,y-1,z)) continue;
+        data.push({x,y,z,scale:.6+randomAt(world.number+94,x,z)*.7});
+      }
+      const [color,width,height]=forms[biome];
+      const mesh=new T.InstancedMesh(new T.ConeGeometry(width,height,3),
+        new T.MeshBasicMaterial({color,side:T.DoubleSide,fog:true}),data.length);
+      mesh.userData.ownedMaterial=true;
+      const dummy=new T.Object3D();
+      data.forEach((plant,i)=>{
+        dummy.position.set(plant.x+.5,plant.y+height*plant.scale*.5,plant.z+.5);
+        dummy.rotation.y=randomAt(world.number+93,plant.x,plant.z)*6.28;
+        dummy.scale.setScalar(plant.scale);dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix);
+      });
+      mesh.instanceMatrix.needsUpdate=true;mesh.frustumCulled=false;
+      this.decor.add(mesh);this.plants.push({mesh,data,height});
+    }
+    const vertices=[];
+    for(let side=0;side<4;side++) for(let n=-HALF;n<HALF;n+=3) {
+      const x=side<2?(side?HALF+2:-HALF-2):n;
+      const z=side>=2?(side===2?-HALF-2:HALF+2):n;
+      const x2=side<2?x:n+3,z2=side>=2?z:n+3;
+      const h=21+5*randomAt(world.number+112,n,side);
+      vertices.push(x,8,z,x2,8,z2,x,h,z,x2,8,z2,x2,h,z2,x,h,z);
+    }
+    const geometry=new T.BufferGeometry();
+    geometry.setAttribute('position',new T.Float32BufferAttribute(vertices,3));
+    const rim=new T.Mesh(geometry,new T.MeshBasicMaterial({color:'#293f43',side:T.DoubleSide,fog:true}));
+    rim.userData.ownedMaterial=true;this.decor.add(rim);
+  }
+
+  updatePlants(x,z) {
+    for(const {mesh,data,height} of this.plants) {
+      const i=data.findIndex(p=>p.x===x && p.z===z);
+      if(i<0) continue;
+      const plant=data[i],dummy=new T.Object3D();
+      const visible=surface(this.world,x,z)===plant.y && this.world.get(x,plant.y-1,z);
+      dummy.position.set(x+.5,plant.y+height*plant.scale*.5,z+.5);
+      dummy.scale.setScalar(visible?plant.scale:0);
+      dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix);mesh.instanceMatrix.needsUpdate=true;
+    }
   }
 
   rebuild(key) {
@@ -475,6 +532,7 @@ export class View {
     this.sky.material.uniforms.zenith.value.copy(this.scene.background).multiplyScalar(biome===3?.54:.42);
     this.sky.material.uniforms.lunar.value.set(biome===3?'#292735':'#b9d7be');
     this.sky.position.set(p.x,p.y+1.62,p.z);
+    this.sky.material.uniforms.drift.value=settings.reduced?0:t*.008;
     this.scene.fog.color.lerp(this.targetFog,w);
     this.scene.fog.density=T.MathUtils.lerp(this.scene.fog.density,air.air+(low?.007:0)+(settings.view===2?.008:0),backdrop);
     const surfaceVisibility=biome===3?0:Math.max(.16,1-Math.max(0,18-p.y)*.12);

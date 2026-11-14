@@ -59,3 +59,5 @@ Para repetir la verificación ejecuta `npm ci`, `npm test`, `npm run build` y `n
 - La ampliación se concentra en una estación de la Salina, materiales y transiciones atmosféricas, respuesta audiovisual y lectura de la mochila. Se conservarán las huellas de los dos asentamientos existentes.
 - Implementados el Aljibe de las Agujas, el atlas de materiales, la bruma por bioma, el audio de impactos y pasos, y los estados de equipo y guardado. El esquema 4 conserva las dos huellas de v3 y añade una tercera solo si es compatible con la partida.
 - Candidata de revisión. La validación de navegador quedó bloqueada en este entorno antes de cargar el juego: Chromium no puede crear su socket de proceso. Ver QA.
+
+- Continuación del acabado ambiental: vegetación instanciada por bioma con densidad baja, escarpe exterior fuera del área jugable y bandas del cielo que respetan movimiento reducido. La geometría vegetal sigue la superficie y se oculta localmente al modificar una columna. Las partidas y las huellas existentes conservan sus coordenadas.

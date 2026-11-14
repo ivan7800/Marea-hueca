@@ -2,6 +2,8 @@
 
 ## 0.6.0
 
+- Escarpe exterior que oculta el corte cuadrado sin cambiar el límite de colisión. Vegetación dispersa por bioma, bandas lentas del cielo y ajuste local de las plantas al editar bloques.
+
 - Aljibe de las Agujas en la Salina Ciega, con suministros y una entrada señalada por un arco.
 - Atlas con vetas y cristales, bruma más despejada y partículas del color del material al minar o construir.
 - Pasos e impactos con ruido filtrado por material. Señales propias para suministros y umbral.
