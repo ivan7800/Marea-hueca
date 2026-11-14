@@ -1,0 +1,333 @@
+import * as T from '../vendor/three.module.min.js';
+import {atlas,meshChunk} from './mesh.js';
+import {BIOMES, CHUNK, HALF, LANDMARKS, clamp, landmarkPosition, randomAt, surface} from './world.js';
+
+export const V = (x=0,y=0,z=0) => new T.Vector3(x,y,z);
+const unitBox=new T.BoxGeometry(1,1,1);
+const mat=(color,emissive=0)=>new T.MeshStandardMaterial({color,roughness:.86,emissive,emissiveIntensity:.55});
+const rock=mat('#526c65'), metal=mat('#343c45'), bone=mat('#9c9087'), fur=mat('#434450');
+const pearl=mat('#aff6d9','#498f8c'), iris=mat('#d994a8','#a64661');
+
+function box(parent,material,x,y,z,sx,sy,sz) {
+  const part=new T.Mesh(unitBox,material);
+  part.position.set(x,y,z);part.scale.set(sx,sy,sz);parent.add(part);
+  return part;
+}
+
+function halo(radius,color) {
+  const mesh=new T.Mesh(new T.TorusGeometry(radius,.026,6,46),new T.MeshBasicMaterial({color,transparent:true,opacity:.8}));
+  mesh.userData.ownedMaterial=true;
+  return mesh;
+}
+
+function platform(scene,world,p) {
+  const [x,y,z]=landmarkPosition(world,p), group=new T.Group();
+  group.position.set(x,y,z); scene.add(group);
+  const r=p.id==='vault'?2.25:1.62;
+  const tone=mat(p.color,p.color);
+  const frame=halo(r,p.color);
+  frame.position.y=r+.55; group.add(frame);
+  const inner=halo(r*.73,p.color);
+  inner.position.y=r+.55; inner.rotation.y=.21;group.add(inner);
+  const eye=new T.Mesh(new T.OctahedronGeometry(.49,0),tone);
+  eye.userData.ownedMaterial=true;eye.position.y=r+.6; group.add(eye);
+  box(group,metal,0,.16,0,1.53,.32,1.26);
+  box(group,tone,0,.34,0,.61,.1,.67);
+  for(let i=0;i<7;i++) {
+    const a=(i/6)*Math.PI, b=box(group,i%2?rock:bone,Math.cos(a)*(r+.23),.52+Math.sin(a)*(r+.66),0,.27,.64,.54);
+    b.rotation.z=a-Math.PI*.5;
+  }
+  box(group,bone,-r,.68,0,.44,1.32,.58);
+  box(group,bone,r,.68,0,.44,1.32,.58);
+  const floor=halo(1.68,p.color);
+  floor.rotation.x=-Math.PI/2;floor.position.y=.04;group.add(floor);
+  return {...p,group,eye,inner};
+}
+
+function observatory(scene,world) {
+  const g=new T.Group();
+  g.position.set(-.5,surface(world,0,-7),-7.45);
+  scene.add(g);
+  for(let i=0;i<7;i++) {
+    const a=i*Math.PI/6, b=box(g,i%2?metal:rock,Math.cos(a)*3.35,1.3+Math.sin(a)*3.04,0,.63,1.08,.56);
+    b.rotation.z=a-Math.PI/2;
+  }
+  const ring=halo(.94,'#c5fce1');
+  ring.position.set(0,4.13,.27);g.add(ring);
+  const eye=new T.Mesh(new T.OctahedronGeometry(.29),pearl);
+  eye.position.copy(ring.position);g.add(eye);
+  for(let i=-1;i<=1;i++) box(g,pearl,i*.45,3.58,.36,.14,.05,.14);
+  return eye;
+}
+
+function spawnMobs(scene,world) {
+  const spots=[['limen',-7,1],['limen',9,-8],['limen',32,6],['limen',6,15],
+    ['rasp',-25,-2],['rasp',-34,-12],['rasp',34,-12],['rasp',-30,12]];
+  return spots.map(([kind,x,z],i)=>{
+    const g=new T.Group();
+    scene.add(g);
+    const passive=kind==='limen';
+    const body=new T.Mesh(new T.OctahedronGeometry(passive?.46:.65),passive?bone:fur);
+    body.scale.set(passive?1.2:1,passive?.58:1.15,passive?1.6:1.27);
+    body.position.y=passive?.62:.9;g.add(body);
+    box(g,passive?pearl:iris,0,body.position.y,.45,.44,.14,.3);
+    if(!passive) {
+      for(const side of [-1,1]) {
+        const spine=box(g,bone,side*.27,1.19,-.16,.12,.61,.16);
+        spine.rotation.z=side*-.39;
+      }
+    }
+    const legs=[];
+    for(const side of [-1,1]) for(let l=0;l<3;l++) {
+      const p=box(g,passive?rock:bone,side*(passive?.44:.46),.31,(l-1)*.34,.11,passive?.64:.78,.116);
+      p.rotation.z=side*(passive?.55:.38);
+      legs.push(p);
+    }
+    return {kind,g,legs,homeX:x,homeZ:z,x,z,y:surface(world,x,z),phase:i*1.7,cool:0,flee:0,noticed:false};
+  });
+}
+
+function groundNear(world,x,y,z) {
+  for(let dy=1;dy>=-2;dy--) {
+    const ny=Math.floor(y)+dy,a=Math.floor(x),b=Math.floor(z);
+    if(world.get(a,ny-1,b) && !world.get(a,ny,b) && !world.get(a,ny+1,b)) return ny;
+  }
+  return null;
+}
+
+export class View {
+  constructor(host) {
+    const canvas=document.createElement('canvas');
+    const context=canvas.getContext('webgl2',{antialias:false,powerPreference:'high-performance'});
+    if(!context) throw new Error('WebGL 2 no está disponible.');
+    this.renderer=new T.WebGLRenderer({canvas,context,antialias:false,powerPreference:'high-performance'});
+    this.renderer.domElement.id='world';
+    this.renderer.domElement.setAttribute('aria-label','Vista en primera persona');
+    host.append(this.renderer.domElement);
+    this.renderer.outputColorSpace=T.SRGBColorSpace;
+    this.scene=new T.Scene();
+    this.scene.background=new T.Color('#364640');
+    this.scene.fog=new T.FogExp2('#3d5048',.027);
+    const uniforms={
+      horizon:{value:new T.Color('#455b4e')},
+      zenith:{value:new T.Color('#17222c')},
+      lunar:{value:new T.Color('#b9d7be')},
+      direction:{value:V(-13,16.4,-76).normalize()}
+    };
+    this.sky=new T.Mesh(new T.SphereGeometry(91,20,12),new T.ShaderMaterial({
+      uniforms,side:T.BackSide,depthWrite:false,
+      vertexShader:`
+        varying vec3 ray;
+        void main(){
+          ray = normalize(position);
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.);
+        }`,
+      fragmentShader:`
+        varying vec3 ray;
+        uniform vec3 horizon;
+        uniform vec3 zenith;
+        uniform vec3 lunar;
+        uniform vec3 direction;
+        void main(){
+          vec3 d=normalize(ray);
+          float up=clamp(d.y,0.,1.);
+          vec3 color=mix(horizon,zenith,smoothstep(.01,.70,up));
+          float moon=max(dot(direction,d),0.);
+          color+=lunar*pow(moon,35.)*.11;
+          gl_FragColor=vec4(color,1.);
+          #include <colorspace_fragment>
+        }`
+    }));
+    this.sky.renderOrder=-2;this.scene.add(this.sky);
+    this.camera=new T.PerspectiveCamera(71,1,.045,100);
+    this.camera.rotation.order='YXZ';
+    this.scene.add(new T.HemisphereLight('#d6f9eb','#634d62',2.15));
+    const light=new T.DirectionalLight('#fff0d3',1.45);
+    light.position.set(-30,46,15);this.scene.add(light);
+    const tex=new T.CanvasTexture(atlas());
+    tex.colorSpace=T.SRGBColorSpace;tex.magFilter=T.NearestFilter;tex.minFilter=T.NearestFilter;
+    tex.generateMipmaps=false;
+    this.material=new T.MeshBasicMaterial({map:tex,vertexColors:true});
+    this.hover=new T.LineSegments(new T.EdgesGeometry(unitBox),new T.LineBasicMaterial({color:'#d3ffe6',transparent:true,opacity:.84}));
+    this.hover.scale.setScalar(1.008);
+    this.scene.add(this.hover);
+    this.targetSky=new T.Color();
+    this.targetFog=new T.Color();
+    this.chunkGroup=new T.Group();this.scene.add(this.chunkGroup);
+    this.decor=new T.Group();this.scene.add(this.decor);
+    this.meshes=new Map();this.queue=[];
+    this.parts=[];
+    this.partMaterial=new T.MeshBasicMaterial({color:'#c8d0ad',fog:true});
+    for(let i=0;i<16;i++) {
+      const mesh=new T.Mesh(unitBox,this.partMaterial);
+      mesh.scale.setScalar(.06);
+      mesh.visible=false;this.scene.add(mesh);
+      this.parts.push({mesh,t:0,v:V()});
+    }
+  }
+
+  resize(settings) {
+    const w=innerWidth,h=innerHeight;
+    const limit=settings.resolution==='low'?.58:settings.resolution==='high'?1.35:(w*h>1_450_000?.87:1);
+    this.renderer.setPixelRatio(Math.min(devicePixelRatio,limit));
+    this.renderer.setSize(w,h);
+    this.camera.aspect=w/h;this.camera.updateProjectionMatrix();
+  }
+
+  start(world) {
+    this.world=world;
+    this.decor.traverse(object=>{
+      if(object.geometry && object.geometry!==unitBox) object.geometry.dispose();
+      if(object.userData.ownedMaterial) object.material.dispose();
+    });
+    this.decor.clear();
+    for(const mesh of this.meshes.values()) mesh.geometry.dispose();
+    this.meshes.clear();this.chunkGroup.clear();this.queue=[];
+    for(const part of this.parts) part.t=0;
+    this.landmarks=LANDMARKS.map(p=>platform(this.decor,world,p));
+    this.eye=observatory(this.decor,world);
+    this.mobs=spawnMobs(this.decor,world);
+
+    const moon=new T.Mesh(new T.IcosahedronGeometry(6,2),new T.MeshBasicMaterial({color:'#b2c8b4',fog:false}));
+    moon.userData.ownedMaterial=true;moon.position.set(-13,33,-69);this.decor.add(moon);
+    const line=new T.Mesh(new T.TorusGeometry(8.7,.045,4,60),new T.MeshBasicMaterial({color:'#b6c8bd',fog:false,transparent:true,opacity:.66}));
+    line.userData.ownedMaterial=true;line.position.copy(moon.position);line.rotation.set(.25,.1,.61);this.decor.add(line);
+    const points=[];
+    for(let i=0;i<154;i++) {
+      const a=randomAt(world.number,i,273)*Math.PI*2,y=randomAt(world.number,i,274)*50+27;
+      points.push(Math.cos(a)*88,y,Math.sin(a)*88);
+    }
+    const stars=new T.BufferGeometry().setAttribute('position',new T.Float32BufferAttribute(points,3));
+    if(!this.starMat) this.starMat=new T.PointsMaterial({color:'#afc8c2',size:.12,fog:false,transparent:true,opacity:.44});
+    this.decor.add(new T.Points(stars,this.starMat));
+  }
+
+  rebuild(key) {
+    const prev=this.meshes.get(key);
+    if(prev) {this.chunkGroup.remove(prev);prev.geometry.dispose();}
+    const [x,z]=key.split(',').map(Number);
+    const {positions,uvs,colors}=meshChunk(this.world,x,z);
+    const g=new T.BufferGeometry();
+    g.setAttribute('position',new T.Float32BufferAttribute(positions,3));
+    g.setAttribute('uv',new T.Float32BufferAttribute(uvs,2));
+    g.setAttribute('color',new T.Float32BufferAttribute(colors,3));
+    g.computeBoundingSphere();
+    const mesh=new T.Mesh(g,this.material);
+    this.meshes.set(key,mesh);this.chunkGroup.add(mesh);
+  }
+
+  stream(p,range) {
+    const x=Math.floor(p.x/CHUNK),z=Math.floor(p.z/CHUNK);
+    const wanted=[];
+    for(let a=-HALF/CHUNK;a<HALF/CHUNK;a++) for(let b=-HALF/CHUNK;b<HALF/CHUNK;b++) {
+      if(Math.max(Math.abs(a-x),Math.abs(b-z))<range) wanted.push([a+','+b,(a-x)**2+(b-z)**2]);
+    }
+    wanted.sort((a,b)=>a[1]-b[1]);
+    const keys=new Set(wanted.map(([key])=>key));
+    for(const [key,mesh] of this.meshes) if(!keys.has(key)) {
+      mesh.geometry.dispose();this.meshes.delete(key);this.chunkGroup.remove(mesh);
+    }
+    this.queue=wanted.map(([key])=>key).filter(key=>!this.meshes.has(key));
+  }
+
+  process() {
+    if(this.queue.length) this.rebuild(this.queue.shift());
+  }
+
+  change(keys) {
+    for(const key of keys) if(this.meshes.has(key)) this.rebuild(key);
+  }
+
+  burst(cell,reduced) {
+    if(reduced) return;
+    for(let i=0;i<this.parts.length;i++) {
+      const part=this.parts[i];
+      part.t=.2+Math.random()*.23;
+      part.mesh.position.set(cell[0]+.5,cell[1]+.6,cell[2]+.5);
+      part.v.set((Math.random()-.5)*3,Math.random()*2.9,(Math.random()-.5)*3);
+    }
+  }
+
+  nearLandmark(p) {
+    return this.landmarks.find(e=>Math.hypot(e.group.position.x-p.x,e.group.position.z-p.z,(e.group.position.y-p.y)*1.25)<3.15);
+  }
+
+  scared(p,dir,reach=3) {
+    let hit=false;
+    for(const m of this.mobs) {
+      const dx=m.x-p.x,dz=m.z-p.z,dist=Math.hypot(dx,dz,m.y-p.y);
+      if(dist>reach || (dist>.01 && (dx*dir[0]+dz*dir[2])/dist<.48)) continue;
+      m.flee=7;m.noticed=false;hit=true;
+    }
+    return hit;
+  }
+
+  mobOnBlock(x,y,z) {
+    return this.mobs.some(m=>m.x>x-.32 && m.x<x+1.32 && m.z>z-.32 && m.z<z+1.32 && m.y<y+1 && m.y+1.55>y);
+  }
+
+  creatures(dt,p,t,low,damage,warning,reduced) {
+    let danger=0;
+    for(const m of this.mobs) {
+      const dx=p.x-m.x,dz=p.z-m.z,dist=Math.hypot(dx,dz);
+      const reach=low?8.5:5.7;
+      const vertical=Math.abs(p.y-m.y);
+      m.cool=Math.max(0,m.cool-dt);m.flee=Math.max(0,m.flee-dt);
+      const active=m.kind==='rasp' && !m.flee && dist<reach && vertical<2.2;
+      if(active) {
+        danger=Math.max(danger,clamp(1-dist/reach,.22,1));
+        if(!m.noticed) warning();
+        if(dist<1.35 && vertical<1.3 && m.cool===0) {damage(low?15:10,'Una raspadura te alcanzó.');m.cool=1.9;}
+      }
+      m.noticed=active;
+      const retreat=m.flee>0 || (m.kind==='limen' && dist<3.3 && vertical<2.2);
+      const tx=active?dx:retreat?-dx:m.homeX+Math.sin(t*.11+m.phase)*2.2-m.x;
+      const tz=active?dz:retreat?-dz:m.homeZ+Math.cos(t*.14+m.phase)*2.1-m.z;
+      const len=Math.hypot(tx,tz)||1,speed=active?1.7:retreat?2.15:.64;
+      if(len>.12 && !(active && dist<1.02)) {
+        const ax=clamp(m.x+tx/len*dt*speed,-47.5,47.5),az=clamp(m.z+tz/len*dt*speed,-47.5,47.5);
+        for(const [x,z] of [[ax,az],[ax,m.z],[m.x,az]]) {
+          const y=groundNear(this.world,x,m.y,z);
+          if(y===null) continue;
+          m.x=x;m.z=z;m.y=y;break;
+        }
+      }
+      m.g.position.set(m.x,m.y,m.z);
+      m.g.rotation.y=Math.atan2(tx,tz);
+      for(let i=0;i<m.legs.length;i++) m.legs[i].rotation.x=reduced?0:Math.sin(t*(active?13:7)+i*1.9)*.32;
+    }
+    return danger;
+  }
+
+  frame(p,hit,dt,t,biome,low,settings,moving) {
+    const b=BIOMES[biome];
+    this.targetSky.set(b.sky).multiplyScalar(low?.57:1);
+    this.targetFog.set(b.fog).multiplyScalar(low?.53:1);
+    const w=Math.min(1,dt*2.3);
+    this.scene.background.lerp(this.targetSky,w);
+    this.sky.material.uniforms.horizon.value.copy(this.scene.background);
+    this.sky.material.uniforms.zenith.value.copy(this.scene.background).multiplyScalar(biome===3?.54:.42);
+    this.sky.material.uniforms.lunar.value.set(biome===3?'#292735':'#b9d7be');
+    this.sky.position.set(p.x,p.y+1.62,p.z);
+    this.scene.fog.color.lerp(this.targetFog,w);
+    this.scene.fog.density=biome===3?.044:settings.view===2?.037:.027;
+    this.starMat.opacity=low?.78:.44;
+    const bob=!settings.reduced && moving && p.ground?Math.sin(t*12)*.034:0;
+    this.camera.position.set(p.x,p.y+1.62+bob,p.z);
+    this.camera.rotation.set(p.pitch,p.yaw,0);
+    this.hover.visible=!!hit;
+    if(hit) this.hover.position.set(hit.cell[0]+.5,hit.cell[1]+.5,hit.cell[2]+.5);
+    if(!settings.reduced) {
+      this.eye.rotation.y=t*.24;
+      for(const e of this.landmarks) {
+        e.eye.rotation.set(t*.24,t*.49,.34);
+        e.inner.rotation.y=.3+Math.sin(t*.6)*.28;
+      }
+    }
+    for(const part of this.parts) {
+      part.t-=dt;part.mesh.visible=part.t>0 && !settings.reduced;
+      if(part.mesh.visible) {part.v.y-=dt*8;part.mesh.position.addScaledVector(part.v,dt);}
+    }
+    this.renderer.render(this.scene,this.camera);
+  }
+}
