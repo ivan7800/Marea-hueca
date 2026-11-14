@@ -1,5 +1,14 @@
 # Cambios
 
+## 0.8.0
+
+- Modo Libre: reglas independientes para activar daño y criaturas agresivas. Las opciones se guardan y migran; Supervivencia conserva sus reglas habituales.
+- Selector rápido visual de bloques con G, accesible también desde Pausa, con materiales ilimitados en Libre y cantidades reunidas en Supervivencia.
+- Dos expediciones deterministas: El órgano de la deriva, en el Espinazo, y El jardín de las conchas, en la Salina Ciega. Ambos añaden siluetas, recursos únicos y hallazgos persistentes.
+- Una variante vegetal poco frecuente en cada bioma, con geometría propia, colocación determinista e instancias compartidas.
+- Liberación de materiales de geometría de expediciones al recrear la escena, reduciendo acumulación al volver a abrir mundos.
+- Actualizados controles, documentación y QA; guardados v1–v5 conservados en la migración al esquema v6.
+
 ## 0.7.0
 
 - Dos modos al crear mundo: Supervivencia y Libre. En Libre puedes usar materiales sin gastarlos y las criaturas no embisten. El modo persiste en el guardado v5; las partidas anteriores se abren en Supervivencia.

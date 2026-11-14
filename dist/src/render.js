@@ -57,9 +57,43 @@ function platform(scene,world,p) {
 function expeditionModel(parent,world,site) {
   const group=new T.Group();
   group.position.set(...sitePosition(world,site));parent.add(group);
+  if(site.id==='spire') {
+    group.scale.setScalar(.76);
+    const stone=mat('#586577','#202c42'), edge=mat('#b9c9ee','#455a7e');
+    stone.userData.ownedMaterial=edge.userData.ownedMaterial=true;
+    for(let i=0;i<7;i++) {
+      const angle=i*Math.PI*2/7,r=1.8+(i%2)*.45,height=2.3+(i%4)*.9;
+      const fin=box(group,i%2?stone:edge,Math.cos(angle)*r,height*.5,Math.sin(angle)*r,.24,height,.62);
+      fin.rotation.y=-angle;fin.rotation.z=Math.sin(angle)*.16;
+    }
+    for(let i=0;i<3;i++) {
+      const ring=halo(.55+i*.48,'#abc3ef');
+      ring.position.y=1.1+i*.7;ring.rotation.set(.25+i*.4,.3+i*.55,.15+i*.3);group.add(ring);
+    }
+    const lens=new T.Mesh(new T.OctahedronGeometry(.52,0),edge);
+    lens.position.y=3.4;group.add(lens);
+    return;
+  }
+  if(site.id==='orchard') {
+    group.scale.setScalar(.72);
+    const shell=mat('#87616a','#4b3039'), pearlwood=mat('#c4a9a5','#655355'), sproutMat=mat('#b5d8ae','#54784a');
+    shell.userData.ownedMaterial=pearlwood.userData.ownedMaterial=sproutMat.userData.ownedMaterial=true;
+    for(let i=0;i<8;i++) {
+      const a=i*Math.PI/4,r=1.15+(i%2)*.45;
+      const x=Math.cos(a)*r,z=Math.sin(a)*r;
+      const cup=new T.Mesh(new T.SphereGeometry(.48,5,3,0,Math.PI*2,0,Math.PI*.62),i%2?shell:pearlwood);
+      cup.position.set(x,.28,z);cup.rotation.z=(i%2?-.38:.38);group.add(cup);
+      const sprout=box(group,sproutMat,x*.74,.78,z*.74,.12,.72,.12);
+      sprout.rotation.z=Math.sin(a)*.25;
+    }
+    box(group,pearl,.0,.25,.0,.5,.5,.5);
+    const crown=halo(1.45,'#e7c2d0');crown.position.y=.8;group.add(crown);
+    return;
+  }
   if(site.id==='witness') {
     const shell=mat('#7b9696','#294e52');
     const seam=mat('#d8a6a8','#685056');
+    shell.userData.ownedMaterial=seam.userData.ownedMaterial=true;
     // Una estructura hueca y suspendida. La forma se lee desde el sendero sin cerrar la entrada.
     for(let i=0;i<9;i++) {
       const angle=i*Math.PI*2/9;
@@ -383,6 +417,45 @@ export class View {
       });
       mesh.instanceMatrix.needsUpdate=true;mesh.frustumCulled=false;
       this.decor.add(mesh);this.plants.push({mesh,data});
+
+      // Una variante poco común aporta otra lectura por bioma sin sembrar más plantas.
+      const uncommon=data.filter(plant=>randomAt(world.number+97,plant.x,plant.z)>.78);
+      if(uncommon.length) {
+        const rare=[];
+        const leaf=(a,b,c)=>rare.push(...a,...b,...c);
+        if(biome===0) {
+          for(let i=0;i<5;i++) {
+            const a=i*Math.PI*2/5,dx=Math.cos(a),dz=Math.sin(a);
+            leaf([0,0,0],[dx*.22,.22,dz*.22],[dx*.42,.52,dz*.42]);
+            leaf([dx*.22,.22,dz*.22],[dx*.42,.52,dz*.42],[dx*.18,.58,dz*.18]);
+          }
+        } else if(biome===1) {
+          for(let i=0;i<3;i++) {
+            const a=i*Math.PI*2/3,dx=Math.cos(a),dz=Math.sin(a);
+            leaf([0,0,0],[dx*.19,.38,dz*.19],[dx*.28,1.12,dz*.28]);
+            leaf([0,0,0],[dx*.28,1.12,dz*.28],[dx*.07,1.22,dz*.07]);
+          }
+        } else {
+          for(let i=0;i<4;i++) {
+            const a=i*Math.PI/2,dx=Math.cos(a),dz=Math.sin(a);
+            leaf([0,.02,0],[dx*.32,.12,dz*.32],[dx*.42,.45,dz*.42]);
+            leaf([0,.02,0],[dx*.42,.45,dz*.42],[dx*.08,.6,dz*.08]);
+          }
+        }
+        const rareGeometry=new T.BufferGeometry();
+        rareGeometry.setAttribute('position',new T.Float32BufferAttribute(rare,3));
+        rareGeometry.computeVertexNormals();
+        const rareColors=['#9bb28a','#c3b8a1','#c4b0b9'];
+        const rareMesh=new T.InstancedMesh(rareGeometry,new T.MeshStandardMaterial({color:rareColors[biome],side:T.DoubleSide,roughness:.92,emissive:rareColors[biome],emissiveIntensity:.045}),uncommon.length);
+        rareMesh.userData.ownedMaterial=true;
+        uncommon.forEach((plant,i)=>{
+          dummy.position.set(plant.x+.5,plant.y,plant.z+.5);
+          dummy.rotation.y=randomAt(world.number+98,plant.x,plant.z)*6.28;
+          dummy.scale.setScalar(plant.scale);dummy.updateMatrix();rareMesh.setMatrixAt(i,dummy.matrix);
+        });
+        rareMesh.instanceMatrix.needsUpdate=true;rareMesh.frustumCulled=false;
+        this.decor.add(rareMesh);this.plants.push({mesh:rareMesh,data:uncommon});
+      }
     }
     const vertices=[];
     for(let side=0;side<4;side++) for(let n=-HALF;n<HALF;n+=3) {

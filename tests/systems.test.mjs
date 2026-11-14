@@ -263,3 +263,33 @@ test('La Fosa del Testigo se descubre una sola vez en ambos modos',async()=>{
     assert.deepEqual(decode(encode(new World('TESTIGO-17'),state,DEFAULT_SETTINGS)).state.discoveries,['witness']);
   }
 });
+
+test('Las reglas configurables de Libre persisten y Supervivencia antigua conserva agresión',()=>{
+  const freeWorld=new World('LIBRE-REGLAS');
+  const free=newState(freeWorld,'free',{damage:true,creatures:false});
+  assert.deepEqual(free.rules,{damage:true,creatures:false});
+  const restored=decode(encode(freeWorld,free,DEFAULT_SETTINGS));
+  assert.deepEqual(restored.state.rules,free.rules);
+  const survivalWorld=new World('SUPERVIVENCIA-ANTIGUA'),survival=newState(survivalWorld);
+  const old=JSON.parse(encode(survivalWorld,survival,DEFAULT_SETTINGS));
+  old.version=5;delete old.rules;
+  assert.deepEqual(decode(JSON.stringify(old)).state.rules,{damage:true,creatures:true});
+  const legacyFreeWorld=new World('LIBRE-V5'),oldFree=JSON.parse(encode(legacyFreeWorld,newState(legacyFreeWorld,'free'),DEFAULT_SETTINGS));
+  oldFree.version=5;delete oldFree.rules;
+  const migrated=decode(JSON.stringify(oldFree)).state;
+  assert.equal(migrated.mode,'free');
+  assert.deepEqual(migrated.rules,{damage:false,creatures:false});
+  old.version=SAVE_VERSION;old.rules={damage:false,creatures:false};
+  assert.throws(()=>decode(JSON.stringify(old)),/inválidos/);
+});
+
+test('Dos expediciones adicionales tienen recompensas únicas y persistentes',async()=>{
+  const {SITES,discover}=await import('../src/expeditions.js');
+  for(const id of ['spire','orchard']) {
+    const site=SITES.find(item=>item.id===id);
+    const world=new World('SITIOS-08'),state=newState(world);
+    assert.equal(discover(state,site,gain),true);
+    assert.equal(discover(state,site,gain),false);
+    assert.ok(decode(encode(world,state,DEFAULT_SETTINGS)).state.discoveries.includes(id));
+  }
+});

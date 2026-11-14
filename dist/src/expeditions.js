@@ -7,6 +7,10 @@ export const SITES = [
     line:'Las costillas señalan un cauce que ya no existe. Queda nácar entre los dientes.'},
   {id:'witness',title:'La Fosa del Testigo',x:5,z:-40,color:'#d6cdbb',reward:{6:3,8:2},
     line:'Bajo la costra hay una forma que no cabe en el mapa. La fosa responde con una vibración; tus bloques permanecen intactos.'},
+  {id:'spire',title:'El órgano de la deriva',x:-42,z:27,color:'#b8c7ee',reward:{3:5,6:2},
+    line:'Las láminas de basalto silban cuando el viento cruza sus ranuras. El cauce señalado cae hacia el centro.'},
+  {id:'orchard',title:'El jardín de las conchas',x:40,z:-37,color:'#efb7cd',reward:{4:3,7:3},
+    line:'Las conchas nacen cerradas en el suelo salino. Una conserva una semilla mineral para el camino.'},
   {id:'pool',title:'El cuenco de sal',x:37,z:20,color:'#eea6c7',reward:{7:3,5:2},
     line:'La concha retiene una huella que parece cambiar de tamaño al rodearla.'}
 ];

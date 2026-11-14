@@ -4,15 +4,19 @@ const browser=await chromium.launch({executablePath:process.env.MAREA_CHROMIUM||
   args:process.env.MAREA_SOFTWARE==='1'?['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader','--single-process','--no-zygote']:[]});
 try {
  const page=await browser.newPage({viewport:{width:1280,height:720}});
+ page.setDefaultTimeout(10000);
  const errors=[];page.on('pageerror',error=>errors.push(error.message));
  await page.goto((process.env.MAREA_URL??'http://127.0.0.1:4273/LA-MAREA-HUECA/')+'?qa=1');
  await page.getByRole('button',{name:'Nueva partida'}).click();
  await page.getByLabel('Modo de juego').selectOption('free');
+ await page.getByLabel('Activar daño y salud').check();
+ await page.getByLabel('Activar criaturas agresivas').uncheck();
  await page.getByRole('button',{name:'Entrar en la cuenca'}).click();
  await page.getByRole('button',{name:'Capturar cursor'}).click();
  const read=()=>page.evaluate(()=>window.mareaQA.state());
  await page.waitForFunction(()=>window.mareaQA.state().mode==='play');
  assert.equal((await read()).gameMode,'free');
+ assert.deepEqual((await read()).rules,{damage:true,creatures:false});
  assert.match((await page.locator('#game-mode-hud').textContent()),/LIBRE/);
  await page.screenshot({path:'/tmp/marea-070-free.png'});
  const before=(await read()).bag['1'];
@@ -25,8 +29,11 @@ try {
  await page.waitForFunction(()=>window.mareaQA.state().revision>=2);
  await page.keyboard.up('m');
  assert.equal((await read()).bag['1'],before);
- await page.keyboard.press('e');
- await page.getByText('Modo Libre · bloques ilimitados.',{exact:false}).waitFor();
+ await page.keyboard.press('g');
+ await page.getByRole('button',{name:'Vetas de basalto',exact:true}).click();
+ assert.equal((await read()).activeItem,'3');
+ await page.locator('dialog button[data-action=inventory]').click();
+ await page.locator('dialog [data-recipe]').first().waitFor();
  await page.getByRole('button',{name:'Fabricar'}).first().click();
  await page.locator('dialog [data-action=pause]').click();
  await page.getByRole('button',{name:'Guardar'}).click();
@@ -36,6 +43,7 @@ try {
  await page.getByRole('button',{name:'Capturar cursor'}).click();
  await page.waitForFunction(()=>window.mareaQA.state().mode==='play');
  assert.equal((await read()).gameMode,'free');
+ assert.deepEqual((await read()).rules,{damage:true,creatures:false});
  assert.deepEqual((await read()).edits,edits);
  assert.equal((await read()).bag['1'],before);
  assert.deepEqual(errors,[]);

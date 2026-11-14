@@ -1,5 +1,20 @@
 # Progreso
 
+## 0.8.0 · Exploración y Libre configurable
+
+- Auditoría de continuidad sobre `main` 0.7.0 (`afef59e`): conservar el terreno y los asentamientos, y ampliar el bucle con opciones prácticas y hallazgos pequeños. La compilación base se mantuvo operativa; las 23 pruebas de sistemas pasaron antes de completar la iteración.
+- Añadidas reglas independientes en Libre para daño y criaturas agresivas; el selector rápido de bloques se abre con G o desde Pausa. Se persisten en guardado v6 y las versiones anteriores migran sin perder cambios; Supervivencia mantiene siempre reglas activas.
+- Añadidos El órgano de la deriva (Espinazo, X −42, Z 27) y El jardín de las conchas (Salina Ciega, X 40, Z −37), con siluetas, recursos y hallazgos persistentes.
+- Revisión de audio: se conserva el sintetizador existente, sus temas por zona, fundidos y canales independientes. QA técnica puede comprobar señal/estados en navegador; escuchar con auriculares y una partida larga requiere validación humana externa.
+- Pendientes de hardware: mando físico, GPU real y escucha de mezcla en auriculares/altavoces. Documentar solo resultados observados en esta sesión.
+- Suite final de sistemas: 23/23. Compilación de `dist/`, HTML autónomo y `git diff --check` correctos.
+- Chromium headless 141.0.7390.37, Linux virtualizado, SwiftShader WebGL 2. El recorrido de escritorio terminó por tres biomas, Cámara Sorda, hallazgos, minería, construcción, fabricación, guardar/recargar/importar y ajustes de música/efectos; 0 errores de aplicación/WebGL.
+- Libre en navegador: daño configurable, criaturas pacíficas, selector G, construcción y minería ilimitadas, receta y continuidad tras recargar. La prueba descubrió y corrigió un acceso inválido al modo desde la mochila.
+- Los dos lugares nuevos se visitaron desde una posición de aproximación de QA caminando y usando F; se obtuvieron sus recompensas y se confirmó persistencia tras recarga. Capturas revisadas y escala ajustada. Toma a 1280 × 720 CSS, calidad baja, 4,35 s, SwiftShader: Órgano 14,9 FPS (65 intervalos, p95 166,8 ms, 168 llamadas, 40.874 triángulos, 6 chunks); Jardín 18,1 FPS (76 intervalos, p95 233,3 ms, 34 llamadas, 14.120 triángulos, 4 chunks). Es medida de renderizado por software y no pronostica rendimiento con GPU física.
+- Se añadieron variantes vegetales raras mediante geometría original e instancias, sin incrementar la densidad base de plantas.
+- Recorrido visual tras las variantes: 21,5 FPS de media en Costra (93 intervalos, p95 116,7 ms, 9 chunks) y 24,1 en Salina (97 intervalos, p95 116,8 ms, 9 chunks), mismos 1280 × 720, calidad baja, 4,35 s nominales y SwiftShader. Las diferencias entre tomas son carga variable del entorno, no evidencia de mejora de GPU.
+- UI de escritorio revisada; el emulador iPhone 13 a 390 × 844 CSS (DPR 3) comprobó menú y ajustes sin desbordamiento. El HTML autónomo arrancó y guardó con red desactivada. El recorrido monolítico sí completó la parte de escritorio, pero Chromium no pudo abrir su segunda página por la limitación de proceso único; móvil y modo offline se ejecutaron luego por separado.
+
 ## Alcance y decisiones
 
 - Proyecto inicializado en una carpeta vacía. Rama local `main`.

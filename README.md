@@ -1,4 +1,4 @@
-# La Marea Hueca · 0.7.0
+# La Marea Hueca · 0.8.0
 
 Sandbox voxel de exploración, construcción y supervivencia con horror cósmico. El mar se retiró de una cuenca que conserva voces bajo la piedra. Puedes excavar, construir tu refugio o salir en busca de dos ecos y llevarlos al recinto enterrado bajo el observatorio.
 
@@ -22,6 +22,7 @@ Abre `http://127.0.0.1:4173/`. El proceso sirve archivos estáticos. El juego no
 | Minar y recoger | Mantener botón izquierdo o M |
 | Colocar el bloque elegido | Botón derecho o N |
 | Elegir casilla | 1–8 o rueda |
+| Selector rápido de bloques | G (también desde Pausa) |
 | Mochila y recetas | E |
 | Escuchar un eco, usar musgo o ahuyentar con el gancho | F |
 | Cuaderno de campo | C |
@@ -29,7 +30,7 @@ Abre `http://127.0.0.1:4173/`. El proceso sirve archivos estáticos. El juego no
 
 ## Modos
 
-Al crear un mundo, elige **Supervivencia** (reunir recursos, fabricar, gestionar salud) o **Libre** (todos los materiales y herramientas disponibles, bloques ilimitados y criaturas sin agresión). La selección queda fija para ese mundo y se conserva al exportarlo. Las partidas anteriores se abren en Supervivencia. El mundo sigue teniendo un solo espacio de guardado local. Exporta la partida previa antes de iniciar otra.
+Al crear un mundo, elige **Supervivencia** (reunir recursos, fabricar, gestionar salud) o **Libre** (todos los materiales y herramientas disponibles, bloques ilimitados). En Libre puedes activar por separado el daño y las criaturas agresivas. **G** abre un selector visual de bloques durante la partida; también se accede desde Pausa. Las reglas quedan guardadas y pueden combinarse a gusto. Supervivencia conserva siempre daño y criaturas. Las partidas anteriores se abren en Supervivencia. El mundo sigue teniendo un solo espacio de guardado local. Exporta la partida previa antes de iniciar otra.
 
 ## Primer recorrido
 
@@ -38,7 +39,7 @@ Al crear un mundo, elige **Supervivencia** (reunir recursos, fabricar, gestionar
 - La entrada de la Cámara Sorda está en el centro del observatorio, al norte del punto de aparición. Baja por el centro de las escaleras. El eco final está cerca de (0, −24).
 - Los límenes se apartan del jugador. Las raspaduras persiguen a corta distancia, especialmente en bajamar. Construye barreras, aléjate o usa el gancho. Si caes, recuperas la salud al regresar y conservas los objetos y cambios.
 
-Los tres hallazgos del cuaderno son opcionales. Examínalos con F y usa sus materiales para fabricar fanales, el gancho o bloques de refugio. Los fanales colocados iluminan su entorno y disuaden a las raspaduras cercanas. Ante el aviso de embestida, toma distancia o usa el gancho.
+Los hallazgos del cuaderno son opcionales. Además de la Fosa del Testigo, busca el Órgano de la deriva en el oeste y el Jardín de las conchas en el este; se reconocen por sus siluetas y ofrecen recursos únicos. Examínalos con F y usa sus materiales para fabricar fanales, el gancho o bloques de refugio. Los fanales colocados iluminan su entorno y disuaden a las raspaduras cercanas. Ante el aviso de embestida, toma distancia o usa el gancho.
 
 ## Asentamientos y objetos especiales
 
@@ -50,7 +51,7 @@ Los tres hallazgos del cuaderno son opcionales. Examínalos con F y usa sus mate
 
 ## Fosa del Testigo
 
-Una cavidad de geometría suspendida se encuentra al norte del observatorio, cerca de X 5, Z −40. Es una expedición opcional. Acércate y examina la huella con F o X en mando. Ofrece nácar y fanales sin alterar tus construcciones. También hay tres familias de vegetación por bioma, con agrupaciones deterministas y paso libre.
+Una cavidad de geometría suspendida se encuentra al norte del observatorio, cerca de X 5, Z −40. Es una expedición opcional. Acércate y examina la huella con F o X en mando. Ofrece nácar y fanales sin alterar tus construcciones. Cada bioma combina una familia vegetal principal con una variante poco frecuente, colocadas con semilla determinista y paso libre.
 
 ## Menú e interfaz
 
@@ -64,7 +65,7 @@ El juego sintetiza su música en el navegador. **Donde rompe el junco** acompañ
 
 ## Guardar y publicar
 
-El autoguardado escribe en una ranura por navegador y origen. Pausa ofrece guardado manual y exportación. Importa desde Créditos. Se pide confirmación al sustituir la ranura y se valida la semilla, las coordenadas, el inventario y las ediciones. El esquema 4 abre partidas de los esquemas 1, 2 y 3 en la misma ranura. Al migrar, sitúa los asentamientos en huellas que no coinciden con tus ediciones ni con tu posición guardada. El modo de prueba `?qa=1` guarda con claves separadas.
+El autoguardado escribe en una ranura por navegador y origen. Pausa ofrece guardado manual y exportación. Importa desde Créditos. Se pide confirmación al sustituir la ranura y se valida la semilla, las coordenadas, el inventario y las ediciones. El esquema 6 abre partidas de los esquemas 1–5; las partidas antiguas conservan Supervivencia. Al migrar, sitúa los asentamientos en huellas que no coinciden con tus ediciones ni con tu posición guardada. El modo de prueba `?qa=1` guarda con claves separadas.
 
 ```bash
 npm test
@@ -92,7 +93,7 @@ node scripts/serve.mjs --root dist --base LA-MAREA-HUECA --port 4273
 MAREA_CHROMIUM=/ruta/a/chromium npm run test:browser
 ```
 
-La interfaz móvil muestra el menú y permite consultar ajustes. La partida requiere teclado, ratón y bloqueo de puntero. Consulta [QA](docs/QA.md) y [progreso](docs/PROGRESS.md).
+La interfaz móvil permite consultar el menú y los ajustes; no hay controles táctiles para jugar. En escritorio se puede jugar con teclado y ratón o con mando Gamepad estándar; el uso con ratón requiere bloqueo de puntero. Consulta [QA](docs/QA.md) y [progreso](docs/PROGRESS.md).
 
 ## Atribución
 

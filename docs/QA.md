@@ -1,4 +1,4 @@
-# QA · La Marea Hueca 0.7.0
+# QA · La Marea Hueca 0.8.0
 
 ## Base
 
@@ -16,9 +16,9 @@
 
 La cuenca tiene 36 chunks de base como máximo y ocho criaturas. Se construyen caras expuestas y se regeneran los vecinos cuando una edición toca un borde. Se priorizan nueve chunks iniciales y el resto se carga de uno en uno. Las ediciones se limitan a 40.000. La persistencia usa una ranura y exportación JSON. Cambiar de ruta en la edición autónoma puede cambiar el ámbito del guardado.
 
-GitHub Pages despliega desde main mediante su flujo de Actions. La versión 0.7.0 se verifica por separado antes de publicarla.
+GitHub Pages despliega desde main. La sección 0.8.0 registra esta candidata; el estado del despliegue se actualizará después de publicar y comprobar Pages.
 
-La ejecución independiente de la edición autónoma abrió una partida desde `file://` con red desactivada, WebGL 2 operativo y guardado local disponible. La emulación táctil de iPhone 13 en Chromium verificó el menú y los ajustes a 390 × 664 CSS (DPR 3).
+La ejecución independiente de la edición autónoma abrió una partida desde `file://` con red desactivada, WebGL 2 operativo y guardado local disponible. La emulación táctil de iPhone 13 en Chromium verificó el menú y los ajustes a 390 × 664 CSS (DPR 3) en aquella sesión.
 
 En las tomas de La Costra sin desplazamiento, la resolución normal y 25 chunks registraron 14,6–15,9 FPS. Con resolución baja y nueve chunks, las repeticiones registraron 15,8–20,6 FPS. Se tomaron intervalos de `requestAnimationFrame` durante unos 4,35 s por toma. La carga variable del host produjo picos de 133–216 ms al percentil 95 en las tomas indicadas. Estos datos corresponden a renderizado por software.
 
@@ -92,3 +92,15 @@ El recorrido de aceptación utilizó I/J/K/L, M y N para cámara, extracción y 
 - Prueba separada de Libre: selección desde el menú, colocación y minería sin gastar ni acumular bloques, receta, guardado y recarga con el modo y las ediciones intactos. Fosa del Testigo: aproximación caminando y saltando desde el sur, hallazgo irrepetible y recarga. La primera aproximación sin saltar topó con un escalón de terreno de un bloque en X 5, Z −37; la ruta se completó usando salto. La construcción del jugador sigue sin sufrir efectos del hallazgo.
 - Capturas de portada, Costra, minería, construcción, mochila, pausa, recarga, Espinazo, Salina, Cámara Sorda, Libre y Fosa revisadas. La Fosa ocupa buena parte de la vista al estar cerca y sus piezas suspendidas no tienen colisión. Se revisaron Ajustes en emulación iPhone 13 a 390 CSS sin desbordamiento. El autónomo se abrió desde file:// sin red e inició Libre con WebGL 2.
 - Tomas fijas de aproximadamente 4,35 s con calidad baja y nueve chunks: Costra 28,5 FPS, 123 intervalos, p95 100,1 ms; Salina 22,3 FPS, 96 intervalos, p95 150,1 ms. Asentamientos (800 × 500 CSS): Boyas 22,4, Costillas 38,0 y Aljibe 39,2 FPS. Son mediciones de SwiftShader en un host con carga variable y no permiten atribuir diferencias con 0.6.1 al cambio de arte. No se han probado GPU física, mando físico ni mezcla audible.
+
+## 0.8.0 · QA candidata
+
+- Node 24.22.1: `npm test` pasa 23/23. `npm run build`, `npm run build:offline` y `git diff --check` correctos. Migración v1–v5 al guardado v6 cubierta; reglas configurables de Libre persisten y Supervivencia no permite desactivarlas.
+- Chromium Headless Shell 141.0.7390.37 en Linux x86_64 virtualizado, 1280 × 720 CSS, Three.js/WebGL 2 con SwiftShader. El recorrido de escritorio de `tests/browser.mjs` terminó sus etapas jugables: biomas, Cámara Sorda, minería, construcción, receta, guardado, recarga, importación/corrupción y audio por zonas; 0 errores JavaScript/WebGL. La suite intentó después abrir un segundo contexto y Chromium se cerró por la limitación del modo `--single-process`.
+- `tests/free-browser.mjs`: creación Libre con daño activo y criaturas agresivas desactivadas, bloque rápido con G, construcción/minería sin consumo, fabricación y guardado/recarga con reglas y cambios intactos. Se corrigió durante la prueba un acceso inválido en el texto de la mochila.
+- `tests/exploration-browser.mjs`: caminata corta desde una posición de aproximación de QA, examen con F, recursos y recarga para el Órgano de la deriva y el Jardín de las conchas. Capturas revisadas; se ajustó la escala para equilibrar silueta y vista cercana.
+- Tomas de rendimiento en los dos hallazgos, semilla MAREA-17, calidad baja, 1280 × 720, 4,35 s nominales; SwiftShader. Órgano: 65 intervalos, 14,9 FPS, p95 166,8 ms, 168 llamadas, 40.874 triángulos y 6 chunks. Jardín: 76 intervalos, 18,1 FPS, p95 233,3 ms, 34 llamadas, 14.120 triángulos y 4 chunks. El renderizado por software y la carga variable limitan la comparación; no se afirma mejora en GPU real.
+- Tras añadir vegetación rara se repitieron tomas de superficie con el mismo entorno: Costra 21,5 FPS (93 intervalos, p95 116,7 ms, 9 chunks) y Salina 24,1 FPS (97 intervalos, p95 116,8 ms, 9 chunks). Las variaciones son demasiado grandes para atribuir una mejora o regresión al código.
+- Mando probado con Gamepad simulado, no físico. Música, cambios por bioma, estados de silencio/pausa y límite de voces se verificaron técnicamente en la sesión; Chromium se lanzó silenciando la salida. No se hizo escucha humana con auriculares/altavoces ni prueba larga acústica.
+- Menú y ajustes revisados en emulación iPhone 13 de Chromium a 390 × 844 CSS, DPR 3; no hubo desbordamiento horizontal. No es prueba de móvil físico ni juego táctil. El archivo autónomo inició una partida y guardó en `file://` con red desactivada.
+- Pendientes reales: mando físico, rendimiento en GPU de usuario, escucha prolongada de mezcla en altavoces/auriculares, Safari y Firefox.

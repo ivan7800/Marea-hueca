@@ -45,6 +45,7 @@ const contents={
   pause:['CAMPO EN PAUSA','Haz una pausa'],
   settings:['PREFERENCIAS','Ajustes'],
   inventory:['EQUIPO DE CAMPO','Mochila y fabricación'],
+  palette:['CONSTRUCCIÓN','Elige un bloque'],
   journal:['EXPEDICIONES','Cuaderno de campo'],
   credits:['LA MAREA HUECA','Créditos'],
   guide:['MANUAL DE CAMPO','Antes de entrar'],
@@ -85,8 +86,8 @@ function show(name) {
   if(mode==='play') {mode='pause';stop();sound.update(settings,false);document.exitPointerLock?.();}
   panel.setAttribute('aria-labelledby','panel-title');
   const templates={
-    new:()=> `<form class="form-grid" id="seed-form"><label for="seed">Semilla del mundo</label><input type="text" id="seed" maxlength="64" required value="${DEFAULT_SEED}" spellcheck="false" autocomplete="off"><label for="game-mode">Modo de juego</label><select id="game-mode"><option value="survival">Supervivencia · recursos y salud</option><option value="free">Libre · construir sin gastar ni recibir daño</option></select><p>La misma semilla reconstruye el mismo terreno. ${disk()?'Ya hay una partida en esta ranura. Puedes descargarla antes de sustituirla.':'Empiezas en La Costra, frente al observatorio.'}</p>${disk()?'<label class="check"><input id="replace-save" type="checkbox" required> Sustituir la partida local</label>':''}<div class="panel-actions"><button type="submit" class="primary">Entrar en la cuenca</button><button data-action="random" type="button">Otra semilla</button>${disk()?'<button data-action="export" type="button">Exportar partida actual</button>':''}</div></form><p class="message"></p>`,
-    pause:()=> `<p>${pausedMessage || 'La cuenca se detiene mientras estás en pausa.'}</p><p class="panel-hint">El regreso al menú guarda el mundo. Exporta una copia si quieres trasladarlo.</p>${buttons(['resume','Reanudar',true],['save','Guardar'],['inventory','Mochila'],['journal','Cuaderno'],['settings','Ajustes'],['guide','Controles'],['export','Exportar partida'],['menu','Volver al menú'])}<p class="message" aria-live="polite"></p>`,
+    new:()=> `<form class="form-grid" id="seed-form"><label for="seed">Semilla del mundo</label><input type="text" id="seed" maxlength="64" required value="${DEFAULT_SEED}" spellcheck="false" autocomplete="off"><label for="game-mode">Modo de juego</label><select id="game-mode"><option value="survival">Supervivencia · recursos y salud</option><option value="free">Libre · reglas configurables</option></select><div id="free-rules" class="form-grid" hidden><label class="check"><input id="free-damage" type="checkbox"> Activar daño y salud</label><label class="check"><input id="free-creatures" type="checkbox"> Activar criaturas agresivas</label></div><p>La misma semilla reconstruye el mismo terreno. ${disk()?'Ya hay una partida en esta ranura. Puedes descargarla antes de sustituirla.':'Empiezas en La Costra, frente al observatorio.'}</p>${disk()?'<label class="check"><input id="replace-save" type="checkbox" required> Sustituir la partida local</label>':''}<div class="panel-actions"><button type="submit" class="primary">Entrar en la cuenca</button><button data-action="random" type="button">Otra semilla</button>${disk()?'<button data-action="export" type="button">Exportar partida actual</button>':''}</div></form><p class="message"></p>`,
+    pause:()=> `<p>${pausedMessage || 'La cuenca se detiene mientras estás en pausa.'}</p>${state?.mode==='free'?`<p class="panel-hint">Modo Libre · daño ${state.rules.damage?'activo':'desactivado'} · criaturas agresivas ${state.rules.creatures?'activas':'desactivadas'}. Pulsa G para cambiar de bloque.</p>`:''}<p class="panel-hint">El regreso al menú guarda el mundo. Exporta una copia si quieres trasladarlo.</p>${buttons(['resume','Reanudar',true],['save','Guardar'],['inventory','Mochila'],...(state?.mode==='free'?[['palette','Elegir bloque']]:[]),['journal','Cuaderno'],['settings','Ajustes'],['guide','Controles'],['export','Exportar partida'],['menu','Volver al menú'])}<p class="message" aria-live="polite"></p>`,
     resume:()=> `<p>Usa el ratón o I J K L para mirar. Puedes minar con M y colocar con N. Escape libera el cursor. Con mando, pulsa Menú para entrar sin capturarlo.</p>${buttons(['resume','Capturar cursor',true],['menu','Volver al menú'])}<p class="message" aria-live="polite"></p>`,
     defeat:()=> `<p>Regresarás junto al observatorio con la mochila y tus construcciones. El mundo conserva tu recorrido.</p>${buttons(['recover','Regresar a La Costra',true])}`,
     journal:()=> {
@@ -102,8 +103,9 @@ function show(name) {
       return `<p>${count}/${SITES.length} hallazgos. Examina las balizas con F o X.</p><div class="rows">${landmarks}</div><h3>Asentamientos</h3><div class="rows">${settlements || '<p>La cuenca conserva tus construcciones en los emplazamientos candidatos.</p>'}</div>${buttons(['resume','Reanudar',true],['pause','Pausa'])}`;
     },
     settings:()=> `<div class="form-grid"><h3>Escucha y mirada</h3>${[['music','Música'],['effects','Efectos'],['sensitivity','Sensibilidad del ratón'],['padSensitivity','Sensibilidad del mando'],['deadzone','Zona muerta del mando (%)']].map(([k,n])=>`<label class="setting">${n}<input data-setting="${k}" type="range" min="${k==='deadzone'?10:0}" max="${k==='deadzone'?40:100}" value="${settings[k]}"></label>`).join('')}<h3>Imagen y comodidad</h3><label class="setting">Distancia de visión<select data-setting="view">${[[2,'Corta'],[3,'Normal'],[4,'Larga']].map(([n,w])=>`<option value="${n}"${settings.view===n?' selected':''}>${w}</option>`).join('')}</select></label><label class="setting">Resolución 3D<select data-setting="resolution">${[['low','Baja'],['auto','Normal'],['high','Alta']].map(([n,w])=>`<option value="${n}"${settings.resolution===n?' selected':''}>${w}</option>`).join('')}</select></label><label class="check"><input data-setting="mute" type="checkbox"${settings.mute?' checked':''}> Silencio total</label><label class="check"><input data-setting="reduced" type="checkbox"${settings.reduced?' checked':''}> Reducir movimiento y efectos</label></div>${buttons(['back','Volver',true])}`,
-    guide:()=> `<p>Construye a tu ritmo. Los ecos y los asentamientos son descubrimientos opcionales.</p><div class="control-grid"><div><kbd>W A S D</kbd><span>Moverse</span></div><div><kbd>ESPACIO</kbd><span>Saltar</span></div><div><kbd>RATÓN / I J K L</kbd><span>Mirar</span></div><div><kbd>IZQ / M</kbd><span>Extraer</span></div><div><kbd>DER / N</kbd><span>Colocar</span></div><div><kbd>F</kbd><span>Usar o escuchar</span></div><div><kbd>1–8 / RUEDA</kbd><span>Elegir casilla</span></div><div><kbd>E / C</kbd><span>Mochila / cuaderno</span></div><div><kbd>ESC / P</kbd><span>Pausa y cursor</span></div></div><p class="panel-hint">Música, efectos, sensibilidad y movimiento reducido se ajustan en Ajustes.</p><h3>Mando con mapa estándar</h3><p>Palanca izquierda: mover. Derecha: mirar. A: saltar. RT: extraer. LT: colocar. X: usar. Y: mochila. LB/RB: barra rápida. Pulsar palanca izquierda: correr. Vista: cuaderno. Menú: pausa.</p><p>En los menús, usa la cruceta o la palanca izquierda para recorrer los controles, A para aceptar y B para volver. Usa teclado para escribir una semilla.</p>${buttons(['back','Volver',true])}`,
-    inventory:()=> `<p>${state.mode==='free'?'Modo Libre · bloques ilimitados. Elige cualquiera para tu barra rápida.':'Modo Supervivencia · reúne materiales y fabrica herramientas.'}</p><p>Pulsa un objeto para ponerlo en la casilla rápida ${state.selected+1}. Selecciona casilla con 1–8 o la rueda durante la partida.</p><div class="inventory">${Object.entries(state.bag).map(([id,n])=>`<button data-equip="${id}">${chip(id)}<span>${ITEMS[id].name} · ${n}${ITEMS[id].note?`<small>${ITEMS[id].note}</small>`:''}</span></button>`).join('') || '<span>Mochila vacía.</span>'}</div><h3>Fabricación</h3><div class="recipes">${RECIPES.map((r,i)=>`<div class="recipe"><div><strong>${ITEMS[r.id].name}${r.count>1?` × ${r.count}`:''}</strong><small>${r.note}<br>${Object.entries(r.costs).map(([id,n])=>`${ITEMS[id].name} ${state.bag[id]??0}/${n}`).join(' · ')}</small></div><button data-recipe="${i}"${canCraft(state,r)?'':' disabled'}>Fabricar</button></div>`).join('')}</div>${buttons(['resume','Reanudar',true],['pause','Pausa'])}<p class="message" aria-live="polite"></p>`,
+    guide:()=> `<p>G abre el selector rápido de bloques. Construye a tu ritmo. Los ecos y los asentamientos son descubrimientos opcionales.</p><div class="control-grid"><div><kbd>W A S D</kbd><span>Moverse</span></div><div><kbd>ESPACIO</kbd><span>Saltar</span></div><div><kbd>RATÓN / I J K L</kbd><span>Mirar</span></div><div><kbd>IZQ / M</kbd><span>Extraer</span></div><div><kbd>DER / N</kbd><span>Colocar</span></div><div><kbd>F</kbd><span>Usar o escuchar</span></div><div><kbd>1–8 / RUEDA</kbd><span>Elegir casilla</span></div><div><kbd>E / C</kbd><span>Mochila / cuaderno</span></div><div><kbd>ESC / P</kbd><span>Pausa y cursor</span></div></div><p class="panel-hint">Música, efectos, sensibilidad y movimiento reducido se ajustan en Ajustes.</p><h3>Mando con mapa estándar</h3><p>Palanca izquierda: mover. Derecha: mirar. A: saltar. RT: extraer. LT: colocar. X: usar. Y: mochila. LB/RB: barra rápida. Pulsar palanca izquierda: correr. Vista: cuaderno. Menú: pausa.</p><p>En los menús, usa la cruceta o la palanca izquierda para recorrer los controles, A para aceptar y B para volver. Usa teclado para escribir una semilla.</p>${buttons(['back','Volver',true])}`,
+    palette:()=> `<p>${state.mode==='free'?'Libre · todos los bloques están disponibles.':'Supervivencia · solo puedes equipar materiales que hayas reunido.'}</p><div class="inventory block-palette">${BLOCKS.slice(1,9).map((block,index)=>{const id=String(index+1),count=state.bag[id]??0;return `<button data-creative="${id}"${state.mode!=='free'&&!count?' disabled':''} aria-label="${block.name}"><span class="chip" style="--item:${block.light}"></span><span>${block.name}${state.mode==='free'?' · ∞':' · '+count}</span></button>`;}).join('')}</div>${buttons(['resume','Reanudar',true],['inventory','Mochila'])}`,
+    inventory:()=> `<p>${state.mode==='free'?'Modo Libre · elige bloques con G; cantidad ilimitada.':'Modo Supervivencia · elige con G los bloques que hayas reunido.'}</p><p>Pulsa un objeto para ponerlo en la casilla rápida ${state.selected+1}. Selecciona casilla con 1–8 o la rueda durante la partida.</p><div class="inventory">${Object.entries(state.bag).map(([id,n])=>`<button data-equip="${id}">${chip(id)}<span>${ITEMS[id].name} · ${n}${ITEMS[id].note?`<small>${ITEMS[id].note}</small>`:''}</span></button>`).join('') || '<span>Mochila vacía.</span>'}</div><h3>Fabricación</h3><div class="recipes">${RECIPES.map((r,i)=>`<div class="recipe"><div><strong>${ITEMS[r.id].name}${r.count>1?` × ${r.count}`:''}</strong><small>${r.note}<br>${Object.entries(r.costs).map(([id,n])=>`${ITEMS[id].name} ${state.bag[id]??0}/${n}`).join(' · ')}</small></div><button data-recipe="${i}"${canCraft(state,r)?'':' disabled'}>Fabricar</button></div>`).join('')}</div>${buttons(['resume','Reanudar',true],...(state.mode==='free'?[['palette','Elegir bloques']]:[]),['pause','Pausa'])}<p class="message" aria-live="polite"></p>`,
     credits:()=> `<p>Mundo, código, texturas, ilustración y sonido originales de <em>La Marea Hueca</em>. La música se sintetiza mientras juegas.</p><p>Three.js r180 · © Three.js Authors · licencia MIT incluida.</p><p><strong>Partidas locales</strong><br>Importa una copia JSON para trasladar tu mundo a otro navegador.</p><div class="panel-actions"><button data-action="import">Importar partida</button>${disk()?'<button data-action="export">Exportar partida</button>':''}<button data-action="back">Volver</button></div><input id="import-file" type="file" accept=".json,application/json" hidden><p class="message" aria-live="polite"></p>`
   };
   panel.innerHTML=body(name,templates[name]());
@@ -111,6 +113,7 @@ function show(name) {
   panel.scrollTop=0;
   if(name==='inventory') inventorySelection();
   panel.querySelector('[data-action=back]').focus({preventScroll:true});
+  if(name==='new') { const updateRules=()=>{const free=$('game-mode').value==='free';panel.querySelector('#free-rules').hidden=!free;if(!free){$('free-damage').checked=true;$('free-creatures').checked=true;}}; $('game-mode').addEventListener('change',updateRules); updateRules(); }
   if(name==='new') (input==='pad'?panel.querySelector('[type=submit]'):$('seed')).focus();
   if(name==='defeat') panel.querySelector('[data-action=recover]').focus();
 
@@ -279,7 +282,7 @@ function drawHUD(hit) {
 }
 function damage(amount,text) {
   if(mode!=='play') return;
-  if(state.mode==='free') return;
+  if(!state.rules.damage) return;
   const p=state.player;
   p.health=Math.max(0,p.health-amount);damagePulse=settings.reduced?.23:.78;
   sound.event('hurt');notify(text,3.7,'danger');
@@ -492,7 +495,7 @@ function tick(now) {
   danger=view.creatures(dt,p,state.elapsed,tide.low,damage,charging=>{
     sound.event(charging?'charge':'creature');
     notify(charging?'La raspadura va a embestir.':'Hay una raspadura cerca.',3.7,'danger');
-  },settings.reduced,state.mode==='free');
+  },settings.reduced,!state.rules.creatures);
   if(mode!=='play') return;
   stepClock+=dt;
   if(moving && p.ground && stepClock>(sprint?.29:.42)) {
@@ -558,7 +561,7 @@ panel.addEventListener('submit',event=>{
     return;
   }
   const newWorld=new World(seed);
-  start({world:newWorld,state:newState(newWorld,$('game-mode').value),settings},seenAtCreation,true);
+  start({world:newWorld,state:newState(newWorld,$('game-mode').value,{damage:$('game-mode').value==='survival'||$('free-damage').checked,creatures:$('game-mode').value==='survival'||$('free-creatures').checked}),settings},seenAtCreation,true);
 });
 panel.addEventListener('click',event=>{
   const target=event.target.closest('button');
@@ -571,11 +574,15 @@ panel.addEventListener('click',event=>{
   if(action==='menu') menu();
   if(action==='save' && save()) message('Partida guardada en este navegador.');
   if(action==='inventory') show('inventory');
+  if(action==='palette') show('palette');
   if(action==='journal') show('journal');
   if(action==='settings' || action==='guide') {previousPanel=panelName;show(action);}
   if(action==='export') download();
   if(action==='import') $('import-file').click();
   if(action==='recover') {recoverPlayer();show('resume');}
+  if(target.dataset.creative && equip(state,target.dataset.creative)) {
+    drawBar();message(`Bloque elegido en la casilla ${state.selected+1}.`);
+  }
   if(target.dataset.equip && equip(state,target.dataset.equip)) {
     drawBar();inventorySelection();message(`${ITEMS[target.dataset.equip].name} en la casilla ${state.selected+1}.`);
   }
@@ -649,6 +656,7 @@ document.addEventListener('keydown',event=>{
   if(code==='Space') jump=true;
   if(code==='Escape' || code==='KeyP') pause();
   if(code==='KeyE') show('inventory');
+  if(code==='KeyG') show('palette');
   if(code==='KeyC') show('journal');
   if(code==='KeyF') useAction();
   if(code==='KeyM') {mining=true;mined=0;mineKey='';}
@@ -699,7 +707,7 @@ if(qa) {
   window.mareaQA=Object.freeze({
     state:()=>state?{mode,player:{...state.player},seed:world.seed,bag:{...state.bag},revision,
       edits:[...world.edits],discoveries:[...state.discoveries],echoes:[...state.echoes],finished:state.finished,biome:currentBiome(state.player),
-      gameMode:state.mode,activeItem:activeItem(),ward:state.ward,needleReady:state.needleReady,elapsed:state.elapsed,deaths:state.deaths,selected:state.selected,
+      gameMode:state.mode,activeItem:activeItem(),rules:{...state.rules},ward:state.ward,needleReady:state.needleReady,elapsed:state.elapsed,deaths:state.deaths,selected:state.selected,
       chunks:view.meshes.size,todo:view.queue.length,locked:document.pointerLockElement?.id??null,
       target:blockHit(),saved:!!disk(),renderer:view.renderer.getContext().getParameter(view.renderer.getContext().VERSION),
       glError:view.renderer.getContext().getError(), calls:view.renderer.info.render.calls,
