@@ -14,6 +14,7 @@
 - Se añadieron variantes vegetales raras mediante geometría original e instancias, sin incrementar la densidad base de plantas.
 - Recorrido visual tras las variantes: 21,5 FPS de media en Costra (93 intervalos, p95 116,7 ms, 9 chunks) y 24,1 en Salina (97 intervalos, p95 116,8 ms, 9 chunks), mismos 1280 × 720, calidad baja, 4,35 s nominales y SwiftShader. Las diferencias entre tomas son carga variable del entorno, no evidencia de mejora de GPU.
 - UI de escritorio revisada; el emulador iPhone 13 a 390 × 844 CSS (DPR 3) comprobó menú y ajustes sin desbordamiento. El HTML autónomo arrancó y guardó con red desactivada. El recorrido monolítico sí completó la parte de escritorio, pero Chromium no pudo abrir su segunda página por la limitación de proceso único; móvil y modo offline se ejecutaron luego por separado.
+- Publicación verificada: Pages desde `main`, Actions run 43629547287 en verde para `c730c06a33f5b9ef94b82eb0f916bb07761d8014`. La portada pública enseña 0.8.0. Intento de inicio desde Chrome compartido detenido por ausencia de WebGL 2 en ese navegador; la escena jugable se verificó en Chromium local con SwiftShader.
 
 ## Alcance y decisiones
 

@@ -16,7 +16,7 @@
 
 La cuenca tiene 36 chunks de base como máximo y ocho criaturas. Se construyen caras expuestas y se regeneran los vecinos cuando una edición toca un borde. Se priorizan nueve chunks iniciales y el resto se carga de uno en uno. Las ediciones se limitan a 40.000. La persistencia usa una ranura y exportación JSON. Cambiar de ruta en la edición autónoma puede cambiar el ámbito del guardado.
 
-GitHub Pages despliega desde main. La sección 0.8.0 registra esta candidata; el estado del despliegue se actualizará después de publicar y comprobar Pages.
+GitHub Pages despliega desde `main`. La versión 0.8.0 está publicada en https://ivan7800.github.io/Marea-hueca/; Actions terminó correctamente para `c730c06a33f5b9ef94b82eb0f916bb07761d8014` (run 43629547287). La portada pública mostró la versión 0.8.0. En el Chrome compartido de revisión, al crear mundo el navegador informó que no ofrece WebGL 2, por lo que allí no pudo iniciar la escena. El recorrido jugable se verificó localmente en Chromium Headless Shell con SwiftShader WebGL 2; esto verifica la compilación y controles, pero no es una prueba de GPU física ni de la instancia pública en un navegador con WebGL 2.
 
 La ejecución independiente de la edición autónoma abrió una partida desde `file://` con red desactivada, WebGL 2 operativo y guardado local disponible. La emulación táctil de iPhone 13 en Chromium verificó el menú y los ajustes a 390 × 664 CSS (DPR 3) en aquella sesión.
 
