@@ -7,7 +7,7 @@ root = Path(__file__).resolve().parent.parent
 version = json.loads((root / "package.json").read_text())["version"]
 name = f"La-Marea-Hueca-v{version}"
 paths = [
-    ".gitignore", ".github/workflows/pages.yml", "README.md", "CHANGELOG.md",
+    ".gitignore", ".nojekyll", "README.md", "CHANGELOG.md",
     "package.json", "package-lock.json", "index.html", "style.css", "tide.svg",
     "La-Marea-Hueca.html"
 ]

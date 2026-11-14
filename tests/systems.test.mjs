@@ -117,3 +117,35 @@ test('Los ecos son opcionales e irrepetibles y la bajamar es cíclica',()=>{
   assert.equal(forecast(181).low,true);
   assert.equal(forecast(260).low,false);
 });
+
+test('Una partida v1 conserva construcción, fanales, mochila y progreso al migrar',()=>{
+  const w=new World('MAREA-17'),s=newState(w);
+  w.set(-1,18,7,8);
+  advanceEcho(s,'spine');
+  const old=JSON.parse(encode(w,s,DEFAULT_SETTINGS));
+  old.version=1;
+  delete old.discoveries;
+  const restored=decode(JSON.stringify(old));
+  assert.equal(restored.world.get(-1,18,7),8);
+  assert.deepEqual(restored.state.bag,s.bag);
+  assert.deepEqual(restored.state.echoes,['spine']);
+  assert.deepEqual(restored.state.discoveries,[]);
+});
+
+test('Los hallazgos son únicos y el índice de fanales sigue al bloque',async()=>{
+  const {SITES,discover,nearbyLanterns}=await import('../src/expeditions.js');
+  const w=new World('MAREA-17'),s=newState(w),site=SITES[0];
+  s.bag[4]=999;
+  assert.equal(discover(s,site,gain),false);
+  assert.equal(s.bag[2],undefined);
+  s.bag[4]=2;
+  assert.equal(discover(s,site,gain),true);
+  assert.equal(discover(s,site,gain),false);
+  const cell=[-1,18,7],player={x:.5,y:18,z:7.5};
+  assert.ok(w.set(...cell,8));
+  const loaded=decode(encode(w,s,DEFAULT_SETTINGS));
+  assert.deepEqual(loaded.state.discoveries,[site.id]);
+  assert.equal(nearbyLanterns(loaded.world,player).length,1);
+  assert.ok(loaded.world.set(...cell,w.base(...cell)));
+  assert.equal(nearbyLanterns(loaded.world,player).length,0);
+});

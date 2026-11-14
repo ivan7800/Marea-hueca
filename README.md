@@ -1,4 +1,4 @@
-# La Marea Hueca · 0.1.0
+# La Marea Hueca · 0.2.0
 
 Sandbox voxel de exploración, construcción y supervivencia con horror cósmico. El mar se retiró de una cuenca que conserva voces bajo la piedra. Puedes excavar, construir tu refugio o salir en busca de dos ecos y llevarlos al recinto enterrado bajo el observatorio.
 
@@ -9,6 +9,7 @@ Abre `La-Marea-Hueca.html` en Chromium o Chrome de escritorio con WebGL 2. El ar
 Desde el código fuente, usa Node.js 22 o posterior:
 
 ```bash
+npm run build
 npm run dev
 ```
 
@@ -23,6 +24,7 @@ Abre `http://127.0.0.1:4173/`. El proceso sirve archivos estáticos. El juego no
 | Elegir casilla | 1–8 o rueda |
 | Mochila y recetas | E |
 | Escuchar un eco, usar musgo o ahuyentar con el gancho | F |
+| Cuaderno de campo | C |
 | Pausa y cursor | Esc o P |
 
 ## Primer recorrido
@@ -32,16 +34,18 @@ Abre `http://127.0.0.1:4173/`. El proceso sirve archivos estáticos. El juego no
 - La entrada de la Cámara Sorda está en el centro del observatorio, al norte del punto de aparición. Baja por el centro de las escaleras. El eco final está cerca de (0, −24).
 - Los límenes se apartan del jugador. Las raspaduras persiguen a corta distancia, especialmente en bajamar. Construye barreras, aléjate o usa el gancho. Si caes, recuperas la salud al regresar y conservas los objetos y cambios.
 
+Los tres hallazgos del cuaderno son opcionales. Examínalos con F y usa sus materiales para fabricar fanales, el gancho o bloques de refugio. Los fanales colocados iluminan su entorno y disuaden a las raspaduras cercanas. Ante el aviso de embestida, toma distancia o usa el gancho.
+
 ## Guardar y publicar
 
-El autoguardado escribe en una ranura por navegador y origen. Pausa ofrece guardado manual y exportación. Importa desde Créditos. Se pide confirmación al sustituir la ranura y se valida la semilla, las coordenadas, el inventario y las ediciones. El esquema 1 incluye ajustes y progreso. El modo de prueba `?qa=1` guarda con claves separadas.
+El autoguardado escribe en una ranura por navegador y origen. Pausa ofrece guardado manual y exportación. Importa desde Créditos. Se pide confirmación al sustituir la ranura y se valida la semilla, las coordenadas, el inventario y las ediciones. El esquema 2 añade los hallazgos y abre también las partidas del esquema 1 con el mismo terreno y la misma ranura. El modo de prueba `?qa=1` guarda con claves separadas.
 
 ```bash
 npm test
 npm run build
 ```
 
-Publica `dist/` como contenido web estático. Para GitHub Pages, sube el proyecto a un repositorio nuevo y elige **Settings → Pages → Build and deployment → Source → GitHub Actions**. El flujo incluido genera y publica `dist/` desde `main` tras pasar las pruebas de sistemas. Todas las rutas de recursos son relativas al proyecto.
+GitHub Pages sirve la raíz de `main`. La entrada de la raíz carga los recursos compilados de `dist/` sin cambiar la URL de juego. Regenera y sube `dist/` junto con el código tras ejecutar las pruebas. Para servir solo la compilación, `dist/` también incluye su propio HTML con rutas relativas.
 
 ## Reconstruir esta entrega
 

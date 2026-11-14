@@ -1,3 +1,4 @@
+import {SITES} from './expeditions.js';
 import {BLOCKS, EDIT_LIMIT, HALF, HEIGHT, World, clamp, inside, surface, biomeAt} from './world.js';
 
 export const ITEMS = Object.fromEntries(BLOCKS.slice(1,9).map((b,i)=>[i+1,{name:b.name, color:b.light}]));
@@ -10,12 +11,12 @@ Object.assign(ITEMS,{
 export const RECIPES = [
   { id:'chisel', count:1, costs:{1:3,4:2}, note:'Parte piedra y vetas con rapidez.' },
   { id:'hook', count:1, costs:{4:2,7:2}, note:'Corta fibras y ahuyenta criaturas.' },
-  { id:'8', count:2, costs:{4:1,6:1}, note:'Dos luces para tu refugio o para señalar una ruta.' },
+  { id:'8', count:2, costs:{4:1,6:1}, note:'Ilumina los bloques cercanos. Colócalos para disuadir a las raspaduras.' },
   { id:'7', count:4, costs:{1:2,5:1}, note:'Cuatro bloques con acabado cobrizo.' },
   { id:'moss', count:2, costs:{2:2,4:1}, note:'Recupera 24 puntos de salud con F.' }
 ];
 export const DEFAULT_SETTINGS={music:58, effects:68, sensitivity:50, view:3, mute:false, reduced:false, resolution:'auto'};
-export const SAVE_VERSION=1;
+export const SAVE_VERSION=2;
 export const MAX_STACK=999;
 export const SLOTS=8;
 export const SAVE_KEY='marea-hueca:slot:v1';
@@ -29,7 +30,7 @@ export function newState(world) {
   return {
     player:{x:.5,y:y+.02,z:7.5,vx:0,vy:0,vz:0,ground:false,yaw:0,pitch:-.035,health:100},
     bag:{1:4,4:2,moss:2}, bar:['1','4',null,null,null,null,null,'moss'], selected:0,
-    echoes:[], finished:false, elapsed:0, deaths:0
+    echoes:[], discoveries:[], finished:false, elapsed:0, deaths:0
   };
 }
 
@@ -214,7 +215,7 @@ export function safeSettings(data) {
 export function encode(world,state,settings) {
   const {x,y,z,yaw,pitch,health}=state.player;
   return JSON.stringify({version:SAVE_VERSION, seed:world.seed, position:[x,y,z,yaw,pitch], health,
-    inventory:state.bag, bar:state.bar, selected:state.selected, echoes:state.echoes, finished:state.finished,
+    inventory:state.bag, bar:state.bar, selected:state.selected, echoes:state.echoes, discoveries:state.discoveries, finished:state.finished,
     elapsed:state.elapsed, deaths:state.deaths, edits:[...world.edits], settings});
 }
 
@@ -223,7 +224,7 @@ export function decode(raw) {
   let data;
   try { data=JSON.parse(raw); } catch { throw new Error('La partida no contiene JSON válido.'); }
   const d=data;
-  if (d?.version!==SAVE_VERSION) throw new Error('La versión de la partida no es compatible.');
+  if (![1,SAVE_VERSION].includes(d?.version)) throw new Error('La versión de la partida no es compatible.');
   const fail=()=>{throw new Error('La partida contiene datos inválidos.');};
   if (typeof d.seed!=='string' || !d.seed.trim() || d.seed.length>64 || !Array.isArray(d.position) ||
       d.position.length!==5 || !d.position.every(Number.isFinite) || Math.abs(d.position[0])>=HALF ||
@@ -231,6 +232,9 @@ export function decode(raw) {
       Math.abs(d.position[3])>Math.PI*2 || Math.abs(d.position[4])>Math.PI/2 ||
       !Number.isFinite(d.health) || d.health<0 || d.health>100 || !d.inventory ||
       typeof d.inventory!=='object' || Array.isArray(d.inventory)) fail();
+  const discoveries=d.version===1?[]:d.discoveries;
+  if (!Array.isArray(discoveries) || discoveries.length>SITES.length ||
+      new Set(discoveries).size!==discoveries.length || discoveries.some(id=>!SITES.some(site=>site.id===id))) fail();
   const world=new World(d.seed), state=newState(world);
   state.bag={};
   for (const [id,n] of Object.entries(d.inventory)) {
@@ -254,9 +258,9 @@ export function decode(raw) {
     if (String(pos)!==key || !inside(...pos) || pos[1]===0 || !Number.isInteger(id) || id<0 || id>8) fail();
     seen.add(key);
     // Evita regenerar chunks al restaurar una lista ya validada.
-    world.edits.set(key,id);
+    world.restoreEdit(...pos,id);
   }
-  Object.assign(state,{bar:d.bar,selected:d.selected,echoes:d.echoes,finished:d.finished,elapsed:d.elapsed,deaths:d.deaths});
+  Object.assign(state,{bar:d.bar,selected:d.selected,echoes:d.echoes,discoveries,finished:d.finished,elapsed:d.elapsed,deaths:d.deaths});
   const [x,y,z,yaw,pitch]=d.position;
   Object.assign(state.player,{x,y,z,yaw,pitch,health:d.health});
   if (collides(world,x,y,z) || d.health===0) recover(world,state);

@@ -1,4 +1,4 @@
-import {CHUNK, HEIGHT, BLOCKS, randomAt} from './world.js';
+import {CHUNK, HEIGHT, HALF, BLOCKS, randomAt} from './world.js';
 
 export const FACES = [
   {d:[1,0,0],v:[[1,0,1],[1,0,0],[1,1,1],[1,1,0]],light:.77},
@@ -10,15 +10,34 @@ export const FACES = [
 ];
 const TRIS=[0,1,2,2,1,3];
 
+function localReader(world,cx,cz) {
+  if(!world.chunkData) return world.get.bind(world);
+  const buffers=[];
+  for(let dz=-1;dz<=1;dz++) for(let dx=-1;dx<=1;dx++) {
+    const x=cx+dx,z=cz+dz;
+    const valid=(dx===0 || dz===0) && x>=-HALF/CHUNK && x<HALF/CHUNK && z>=-HALF/CHUNK && z<HALF/CHUNK;
+    buffers.push(valid?world.chunkData(x,z):null);
+  }
+  const startX=cx*CHUNK,startZ=cz*CHUNK;
+  return (x,y,z)=>{
+    if(y<0 || y>=HEIGHT) return 0;
+    const row=z<startZ?0:z>=startZ+CHUNK?2:1;
+    const col=x<startX?0:x>=startX+CHUNK?2:1;
+    return buffers[row*3+col]?.[((z & 15)*CHUNK+(x & 15))*HEIGHT+y]??0;
+  };
+}
+
 export function meshChunk(world,cx,cz) {
+  const get=localReader(world,cx,cz);
   const positions=[],uvs=[],colors=[];
   for(let z=cz*CHUNK; z<(cz+1)*CHUNK; z++) for(let x=cx*CHUNK; x<(cx+1)*CHUNK; x++)
     for(let y=1; y<HEIGHT; y++) {
-      const id=world.get(x,y,z);
+      const id=get(x,y,z);
       if(!id) continue;
-      const value=.84+randomAt(world.number+y*29,x,z)*.16;
+      let value;
       for(const {d,v,light} of FACES) {
-        if(world.get(x+d[0],y+d[1],z+d[2])) continue;
+        if(get(x+d[0],y+d[1],z+d[2])) continue;
+        value??=.84+randomAt(world.number+y*29,x,z)*.16;
         const shade=id===8?.95+light*.2: value*light;
         for(const i of TRIS) {
           positions.push(x+v[i][0],y+v[i][1],z+v[i][2]);

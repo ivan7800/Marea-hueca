@@ -1,5 +1,12 @@
 # Cambios
 
+## 0.2.0
+
+- Tres hallazgos con formas y materiales propios, interacciones únicas y cuaderno persistente.
+- Fanales con luz local y efecto disuasorio, embestidas anunciadas y barreras que bloquean golpes.
+- Música subterránea con otro motivo y un límite de voces simultáneas.
+- Mallas de chunks sobre búferes de voxeles, migración de partidas v1 y publicación desde la compilación.
+
 ## 0.1.0
 
 - Cuenca voxel generada por semilla, con tres biomas de superficie y un recinto subterráneo.

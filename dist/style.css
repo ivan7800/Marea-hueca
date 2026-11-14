@@ -126,3 +126,6 @@ h3{color:var(--mint);font-size:14px;margin:15px 0 6px}
 }
 @media(pointer:coarse){#mobile-note{display:block}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+.journal-entry{border-bottom:1px solid var(--line);padding:.65rem 0}
+.journal-entry small{display:block;margin-top:4px;color:var(--mint);font:11px var(--mono)}
+.journal-entry p{margin:.45rem 0 0}

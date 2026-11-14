@@ -1,3 +1,5 @@
+import {SITES, sitePosition, nearbyLanterns} from './expeditions.js';
+import {trace} from './systems.js';
 import * as T from '../vendor/three.module.min.js';
 import {atlas,meshChunk} from './mesh.js';
 import {BIOMES, CHUNK, HALF, LANDMARKS, clamp, landmarkPosition, randomAt, surface} from './world.js';
@@ -42,6 +44,26 @@ function platform(scene,world,p) {
   const floor=halo(1.68,p.color);
   floor.rotation.x=-Math.PI/2;floor.position.y=.04;group.add(floor);
   return {...p,group,eye,inner};
+}
+
+function expeditionModel(parent,world,site) {
+  const group=new T.Group();
+  group.position.set(...sitePosition(world,site));parent.add(group);
+  const accent=mat(site.color,site.color);
+  const marker=new T.Mesh(new T.OctahedronGeometry(.28),accent);
+  marker.userData.ownedMaterial=true;marker.position.y=1.25;group.add(marker);
+  box(group,bone,0,.15,0,.65,.3,.65);
+  for(let i=0;i<9;i++) {
+    const angle=i*Math.PI*2/9;
+    const ring=site.id!=='rib';
+    const x=ring?Math.cos(angle)*2.4:(i-4)*.52;
+    const z=ring?Math.sin(angle)*2.4:Math.cos(i*.65)*.9;
+    const height=site.id==='pool'?.3+(i%3)*.28:1+(i%5)*.34;
+    const post=box(group,i%2?bone:rock,x,height/2,z,.25,height,.42);
+    post.rotation.z=ring?Math.cos(angle)*.25:Math.sin(i*.6)*.4;
+  }
+  const rim=halo(site.id==='pool'?2.1:1.1,site.color);
+  rim.rotation.x=-Math.PI/2;rim.position.y=.34;group.add(rim);
 }
 
 function observatory(scene,world) {
@@ -148,6 +170,23 @@ export class View {
     tex.colorSpace=T.SRGBColorSpace;tex.magFilter=T.NearestFilter;tex.minFilter=T.NearestFilter;
     tex.generateMipmaps=false;
     this.material=new T.MeshBasicMaterial({map:tex,vertexColors:true});
+    this.lanterns=Array.from({length:4},()=>new T.Vector4(0,0,0,0));
+    this.material.onBeforeCompile=shader=>{
+      shader.uniforms.mareaLanterns={value:this.lanterns};
+      shader.vertexShader='varying vec3 mareaPosition;\n'+shader.vertexShader.replace(
+        '#include <begin_vertex>','#include <begin_vertex>\nmareaPosition = position;');
+      shader.fragmentShader='varying vec3 mareaPosition;\nuniform vec4 mareaLanterns[4];\n'+
+        shader.fragmentShader.replace('#include <color_fragment>',`
+          #include <color_fragment>
+          vec3 lanternGlow = vec3(0.);
+          if(mareaLanterns[0].w > 0.) for(int i=0;i<4;i++){
+            vec3 offset = mareaPosition - mareaLanterns[i].xyz;
+            float glow = max(0.,1. - dot(offset,offset) * .09);
+            lanternGlow += glow * glow * mareaLanterns[i].w * vec3(.39,.84,.70);
+          }
+          diffuseColor.rgb += min(lanternGlow,vec3(.6)) * (.24 + diffuseColor.rgb * .34);
+        `);
+    };
     this.hover=new T.LineSegments(new T.EdgesGeometry(unitBox),new T.LineBasicMaterial({color:'#d3ffe6',transparent:true,opacity:.84}));
     this.hover.scale.setScalar(1.008);
     this.scene.add(this.hover);
@@ -186,6 +225,8 @@ export class View {
     for(const part of this.parts) part.t=0;
     this.landmarks=LANDMARKS.map(p=>platform(this.decor,world,p));
     this.eye=observatory(this.decor,world);
+    for(const site of SITES) expeditionModel(this.decor,world,site);
+    this.lightClock=0;
     this.mobs=spawnMobs(this.decor,world);
 
     const moon=new T.Mesh(new T.IcosahedronGeometry(6,2),new T.MeshBasicMaterial({color:'#b2c8b4',fog:false}));
@@ -257,7 +298,9 @@ export class View {
     for(const m of this.mobs) {
       const dx=m.x-p.x,dz=m.z-p.z,dist=Math.hypot(dx,dz,m.y-p.y);
       if(dist>reach || (dist>.01 && (dx*dir[0]+dz*dir[2])/dist<.48)) continue;
-      m.flee=7;m.noticed=false;hit=true;
+      const eye=[p.x,p.y+1.15,p.z];
+      if(trace(this.world,eye,[dx/(dist||1),(m.y-p.y)/(dist||1),dz/(dist||1)],Math.max(0,dist-.3))) continue;
+      m.flee=7;m.noticed=false;m.charge=0;hit=true;
     }
     return hit;
   }
@@ -273,14 +316,25 @@ export class View {
       const reach=low?8.5:5.7;
       const vertical=Math.abs(p.y-m.y);
       m.cool=Math.max(0,m.cool-dt);m.flee=Math.max(0,m.flee-dt);
-      const active=m.kind==='rasp' && !m.flee && dist<reach && vertical<2.2;
+      const lit=m.kind==='rasp' && dist<reach && nearbyLanterns(this.world,m,3.3,1).length>0;
+      const active=m.kind==='rasp' && !m.flee && !lit && dist<reach && vertical<2.2;
+      const canStrike=active && dist<1.45 && vertical<1.3 && m.cool===0 &&
+        !trace(this.world,[m.x,m.y+1,m.z],[dx/(dist||1),(p.y-m.y)/(dist||1),dz/(dist||1)],Math.max(0,dist-.25));
+      if(!canStrike) m.charge=0;
       if(active) {
         danger=Math.max(danger,clamp(1-dist/reach,.22,1));
         if(!m.noticed) warning();
-        if(dist<1.35 && vertical<1.3 && m.cool===0) {damage(low?15:10,'Una raspadura te alcanzó.');m.cool=1.9;}
+        if(canStrike) {
+          if(!m.charge) warning(true);
+          m.charge=(m.charge||0)+dt;
+          if(m.charge>=.48) {
+            damage(low?13:9,'Una raspadura te alcanzó.');
+            m.cool=2.25;m.charge=0;
+          }
+        }
       }
       m.noticed=active;
-      const retreat=m.flee>0 || (m.kind==='limen' && dist<3.3 && vertical<2.2);
+      const retreat=lit || m.flee>0 || (m.kind==='limen' && dist<3.3 && vertical<2.2);
       const tx=active?dx:retreat?-dx:m.homeX+Math.sin(t*.11+m.phase)*2.2-m.x;
       const tz=active?dz:retreat?-dz:m.homeZ+Math.cos(t*.14+m.phase)*2.1-m.z;
       const len=Math.hypot(tx,tz)||1,speed=active?1.7:retreat?2.15:.64;
@@ -300,6 +354,16 @@ export class View {
   }
 
   frame(p,hit,dt,t,biome,low,settings,moving) {
+    this.lightClock-=dt;
+    if(this.lightClock<=0) {
+      this.lightClock=.15;
+      const lights=nearbyLanterns(this.world,p,13,settings.resolution==='low'?2:4);
+      this.lanterns.forEach((uniform,i)=>{
+        const light=lights[i];
+        if(light) uniform.set(light.x,light.y,light.z,1);
+        else uniform.set(0,0,0,0);
+      });
+    }
     const b=BIOMES[biome];
     this.targetSky.set(b.sky).multiplyScalar(low?.57:1);
     this.targetFog.set(b.fog).multiplyScalar(low?.53:1);

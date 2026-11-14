@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#101a1b">
   <meta name="description" content="Sandbox voxel de exploración, construcción y horror cósmico.">
-  <link rel="icon" href="./tide.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./style.css">
+  <link rel="icon" href="./dist/tide.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./dist/style.css">
   <title>La Marea Hueca</title>
 </head>
 <body>
@@ -30,7 +30,7 @@
       <p id="mobile-note">Para jugar, usa un equipo con teclado y ratón.</p>
     </div>
     <div class="chart-note"><i></i><div><b>01 / LA COSTRA</b><span>Vista del observatorio</span></div></div>
-    <footer class="front-footer"><span><i></i> JUEGO LOCAL</span><span>PC · TECLADO Y RATÓN</span><span>V. 0.1.0</span></footer>
+    <footer class="front-footer"><span><i></i> JUEGO LOCAL</span><span>PC · TECLADO Y RATÓN</span><span>V. 0.2.0</span></footer>
   </main>
   <div id="hud" hidden>
     <div class="hud-top">
@@ -48,12 +48,12 @@
     <div class="hud-bottom">
       <div class="quick-status"><span id="tool-name"></span><span class="health"><b>+</b> <strong id="health"></strong><progress id="healthbar" max="100" aria-label="Salud"></progress></span></div>
       <div id="bar" aria-label="Barra rápida"></div>
-      <div class="quick-help"><span><kbd>WASD</kbd> Mover</span><span><kbd>ESP</kbd> Saltar</span><span><kbd>IZQ</kbd> Minar</span><span><kbd>DER</kbd> Colocar</span><span><kbd>E</kbd> Mochila</span><span><kbd>F</kbd> Usar</span><span><kbd>ESC</kbd> Pausa</span></div>
+      <div class="quick-help"><span><kbd>WASD</kbd> Mover</span><span><kbd>ESP</kbd> Saltar</span><span><kbd>IZQ</kbd> Minar</span><span><kbd>DER</kbd> Colocar</span><span><kbd>E</kbd> Mochila</span><span><kbd>C</kbd> Cuaderno</span><span><kbd>F</kbd> Usar</span><span><kbd>ESC</kbd> Pausa</span></div>
     </div>
   </div>
   <dialog id="panel"></dialog>
   <div id="loading" hidden role="status"><div class="seal"><i></i> ABRIENDO EL ATLAS</div><p>Reconstruyendo la cuenca…</p><progress id="load-progress" max="9" value="0"></progress></div>
   <div id="fatal" hidden role="alert"></div>
-  <script type="module" src="./src/main.js"></script>
+  <script type="module" src="./dist/src/main.js"></script>
 </body>
 </html>

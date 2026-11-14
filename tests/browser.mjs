@@ -109,7 +109,7 @@ try {
   await page.keyboard.up('m');
   assert.equal((await read()).bag[mined.block],bag+1);
   assert.equal((await read()).revision,1);
-  await page.keyboard.press('1');
+  await page.keyboard.press(mined.block===2?'3':'1');
   await page.keyboard.press('n');
   assert.equal((await read()).revision,2);
   await turn(.25,-.53);
@@ -144,6 +144,10 @@ try {
   if((await read()).mode==='play') await pause();
   else await button('Reanudar').waitFor();
   assert.equal((await read()).locked,null);
+  await resume();
+  await page.keyboard.press('c');
+  await page.getByText('0/3 hallazgos.',{exact:false}).waitFor();
+  await snap('14-cuaderno');
   await resume();
   await walk(.5,.5);
   await walk(-19,.5);

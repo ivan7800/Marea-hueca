@@ -150,30 +150,62 @@ export class World {
     this.number=hashSeed(seed);
     this.chunks=new Map();
     this.edits=new Map();
+    this.lanternChunks=new Map();
+    this.editedChunks=new Map();
   }
 
   get(x,y,z) {
     if (!inside(x,y,z)) return 0;
-    return this.edits.get(blockKey(x,y,z)) ?? this.base(x,y,z);
+    const data=this.chunkData(Math.floor(x/CHUNK),Math.floor(z/CHUNK));
+    return data[((z & 15)*CHUNK+(x & 15))*HEIGHT+y];
   }
 
   base(x,y,z) {
     if (!inside(x,y,z)) return 0;
-    const key=chunkKey(x,z);
-    if (!this.chunks.has(key)) this.chunks.set(key,makeChunk(this,Math.floor(x/CHUNK),Math.floor(z/CHUNK)));
-    return this.chunks.get(key)[((z & 15)*CHUNK+(x & 15))*HEIGHT+y];
+    return this.chunkData(Math.floor(x/CHUNK),Math.floor(z/CHUNK),true)[((z & 15)*CHUNK+(x & 15))*HEIGHT+y];
+  }
+
+  chunkData(cx,cz,baseOnly=false) {
+    const key=cx+','+cz;
+    if (!baseOnly && this.editedChunks.has(key)) return this.editedChunks.get(key);
+    if (!this.chunks.has(key)) this.chunks.set(key,makeChunk(this,cx,cz));
+    return this.chunks.get(key);
   }
 
   set(x,y,z,id) {
     if (!inside(x,y,z) || y===0 || !Number.isInteger(id) || id<0 || id>8) return false;
     const key=blockKey(x,y,z);
     if (id===this.base(x,y,z)) {
-      this.edits.delete(key);
+      if(this.edits.delete(key)) {
+        const data=this.editedChunks.get(chunkKey(x,z));
+        data[((z & 15)*CHUNK+(x & 15))*HEIGHT+y]=id;
+        this.indexLantern(x,y,z,0);
+      }
       return true;
     }
     if (this.edits.size>=EDIT_LIMIT && !this.edits.has(key)) return false;
-    this.edits.set(key,id);
+    this.restoreEdit(x,y,z,id);
     return true;
+  }
+
+  restoreEdit(x,y,z,id) {
+    this.edits.set(blockKey(x,y,z),id);
+    const cx=Math.floor(x/CHUNK),cz=Math.floor(z/CHUNK), key=cx+','+cz;
+    if(!this.editedChunks.has(key)) this.editedChunks.set(key,this.chunkData(cx,cz,true).slice());
+    this.editedChunks.get(key)[((z & 15)*CHUNK+(x & 15))*HEIGHT+y]=id;
+    this.indexLantern(x,y,z,id);
+  }
+
+  indexLantern(x,y,z,id) {
+    const chunk=chunkKey(x,z), key=blockKey(x,y,z);
+    if(id===8) {
+      if(!this.lanternChunks.has(chunk)) this.lanternChunks.set(chunk,new Set());
+      this.lanternChunks.get(chunk).add(key);
+    } else {
+      const lanterns=this.lanternChunks.get(chunk);
+      lanterns?.delete(key);
+      if(lanterns?.size===0) this.lanternChunks.delete(chunk);
+    }
   }
 }
 

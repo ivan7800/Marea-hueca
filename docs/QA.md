@@ -31,3 +31,11 @@ La Salina registró 13,6 FPS de media (57 fotogramas, p95 de 300,1 ms) con resol
 La revisión visual cubrió portada, aparición, extracción, colocación, mochila, pausa, recarga, superficies de los tres biomas, límenes, interfaz móvil, Cámara Sorda y resultado del encuentro. El Espinazo registró daño y aviso de raspadura. Se usaron capturas para corregir la disposición de las casillas de ajustes en la pantalla estrecha.
 
 El recorrido de aceptación utilizó I/J/K/L, M y N para cámara, extracción y colocación. El entorno sin ventana permitió probar captura y liberación de puntero, pero no reprodujo movimientos relativos de ratón de forma fiable. Queda pendiente la vuelta completa con un ratón físico y la pérdida de foco en una sesión de escritorio visible. La derrota se verificó en la suite de sistemas. No se midió la duración de una partida libre ni se hizo una prueba con jugadores externos.
+
+## Verificación de 0.2.0
+
+- Base: `06af609` de GitHub. La raíz pública y su módulo principal respondieron HTTP 200 antes de los cambios. Pages usa despliegue por rama. La entrada conserva la URL pública y toma sus recursos de la compilación versionada en `dist/`.
+- Pasaron las 11 pruebas de sistemas, incluidas la migración v1 y la persistencia de hallazgos y fanales. Se reconstruyeron la edición web y el HTML autónomo.
+- Microbenchmark en Node 24.22.1, Linux x64, Intel Xeon Platinum 8573C virtualizado. Semilla MAREA-17, nueve chunks centrales precalentados, 25 mediciones alternas por versión. Mediana de 80,25 a 9,17 ms y p95 de 145,17 a 22,26 ms. Ambas versiones generaron 30.294 vértices.
+- La toma fija de La Costra, a 1280 × 720 CSS, calidad baja y nueve chunks, pasó de 22,5 a 24,3 FPS en sendas ejecuciones con Chromium 141 y SwiftShader (4,35 s nominales). La carga variable del entorno limita cualquier comparación de FPS y no representa hardware físico.
+- Pendientes de evaluación física: ratón bajo bloqueo de puntero, latencia audiovisual, GPU, Firefox, Safari, móvil y mando.
