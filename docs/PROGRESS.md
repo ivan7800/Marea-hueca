@@ -35,3 +35,8 @@ Para repetir la verificación ejecuta `npm ci`, `npm test`, `npm run build` y `n
 - La música limita el trabajo a una pista activa y desacopla la ganancia de las colas de cada zona. Un motor por página, hasta 16 voces simultáneas y liberación al terminar. Pausar detiene la programación de frases. Los ajustes de sonido conservan sus claves.
 - Bruma y tonos de luz por región, motas en una sola geometría y fanales mediante cuatro posiciones como máximo. El brillo de los fanales se calcula por distancia, sin sombras ni oclusión por bloques. La calidad baja limita el brillo a dos fanales y omite las motas.
 - Posturas de carga y recuperación en las raspaduras. La Cámara Sorda tiene movimiento localizado. No cambia el formato de las partidas.
+
+## 0.3.1 · Firmamento de la cuenca
+
+- El firmamento añade un satélite facetado y un arco distante. Ambos se mueven lentamente, desaparecen en la Cámara Sorda y respetan movimiento reducido.
+- La posición de la luz lunar y el tono del halo cambian gradualmente durante la bajamar. Las estrellas aumentan su presencia sin flashes.

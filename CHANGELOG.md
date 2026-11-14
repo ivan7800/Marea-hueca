@@ -1,5 +1,10 @@
 # Cambios
 
+## 0.3.1
+
+- Segundo cuerpo celeste y arco distante con movimiento lento, brillo atenuado bajo tierra y movimiento reducido respetado.
+- La luna, su halo y el brillo celeste cambian suavemente durante la bajamar.
+
 ## 0.3.0
 
 - Cuatro temas procedurales por zona, con una capa de tensión y un motivo para los hallazgos.

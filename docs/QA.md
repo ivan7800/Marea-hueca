@@ -47,3 +47,7 @@ El recorrido de aceptación utilizó I/J/K/L, M y N para cámara, extracción y 
 - El recorrido comprobó los cuatro cambios de tema, pausa, vuelta al menú, silencio total y persistencia de volúmenes independientes. Una prueba directa con Web Audio API y analizador registró señal para los cuatro temas, la modulación de amenaza y el motivo de hallazgo. El máximo observado fue de siete voces y se observó cero en pausa y silencio. La prueba de señal no incluyó escucha física por auriculares o altavoces.
 - Comparación exploratoria en vistas fijas, semilla MAREA-17, 4,35 s nominales por toma, calidad baja, distancia corta, procesador Xeon Platinum 8573C virtualizado. FPS 0.2.0 → 0.3.0: Costra 10,7 → 15,6; Espinazo 6,1 → 5,6; Salina 0,8 → 9,3; Cámara 1,6 → 11,3. En Salina y Cámara la base produjo solo cuatro y cinco intervalos respectivamente. La carga variable y el renderizado por software impiden atribuir esas diferencias al código o concluir rendimiento en ordenadores físicos.
 - Pendientes físicos: ratón con ventana visible, GPU, Safari, Firefox y evaluación auditiva de la mezcla.
+
+## Verificación de 0.3.1
+
+- La escena celeste se comprobó en Chromium 141 con WebGL 2 sobre SwiftShader. Satélite y arco permanecen estables en superficie y se atenúan con profundidad. El movimiento reducido congela su animación. La prueba no representa una GPU física.

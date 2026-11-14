@@ -1,4 +1,4 @@
-# La Marea Hueca · 0.3.0
+# La Marea Hueca · 0.3.1
 
 Sandbox voxel de exploración, construcción y supervivencia con horror cósmico. El mar se retiró de una cuenca que conserva voces bajo la piedra. Puedes excavar, construir tu refugio o salir en busca de dos ecos y llevarlos al recinto enterrado bajo el observatorio.
 

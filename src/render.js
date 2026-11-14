@@ -265,6 +265,23 @@ export class View {
     moon.userData.ownedMaterial=true;moon.position.set(-13,33,-69);this.decor.add(moon);
     const line=new T.Mesh(new T.TorusGeometry(8.7,.045,4,60),new T.MeshBasicMaterial({color:'#b6c8bd',fog:false,transparent:true,opacity:.66}));
     line.userData.ownedMaterial=true;line.position.copy(moon.position);line.rotation.set(.25,.1,.61);this.decor.add(line);
+    this.moon=moon;
+    this.moonArc=line;
+    const satellite=new T.Mesh(new T.IcosahedronGeometry(2.15,1),new T.MeshBasicMaterial({
+      color:'#b6a8ce',fog:false,transparent:true,opacity:.78
+    }));
+    satellite.userData.ownedMaterial=true;
+    satellite.position.set(29,22,-84);
+    this.decor.add(satellite);
+    this.satellite=satellite;
+    const arc=new T.Mesh(new T.TorusGeometry(12.2,.065,5,96),new T.MeshBasicMaterial({
+      color:'#94cfc6',fog:false,transparent:true,opacity:.29
+    }));
+    arc.userData.ownedMaterial=true;
+    arc.position.set(4,15,-78);
+    arc.rotation.set(.28,.16,-.19);
+    this.decor.add(arc);
+    this.farArc=arc;
     const points=[];
     for(let i=0;i<154;i++) {
       const a=randomAt(world.number,i,273)*Math.PI*2,y=randomAt(world.number,i,274)*50+27;
@@ -438,7 +455,24 @@ export class View {
     this.sky.position.set(p.x,p.y+1.62,p.z);
     this.scene.fog.color.lerp(this.targetFog,w);
     this.scene.fog.density=T.MathUtils.lerp(this.scene.fog.density,air.air+(low?.007:0)+(settings.view===2?.008:0),backdrop);
-    this.starMat.opacity=low?.78:.44;
+    const surfaceVisibility=biome===3?0:Math.max(.16,1-Math.max(0,18-p.y)*.12);
+    this.starMat.opacity=(low?.78:.44)*surfaceVisibility;
+    this.moon.material.opacity=surfaceVisibility;
+    this.moonArc.material.opacity=.66*surfaceVisibility;
+    this.satellite.material.opacity=.78*surfaceVisibility;
+    this.farArc.material.opacity=(.29+.035*Math.sin(settings.reduced?0:t*.04))*surfaceVisibility;
+    if(!settings.reduced) {
+      this.moon.rotation.y=t*.008;
+      this.moonArc.rotation.z=.61+Math.sin(t*.018)*.018;
+      this.satellite.rotation.set(t*.006,t*.014,t*.004);
+      this.farArc.rotation.z=-.19+Math.sin(t*.025)*.025;
+    }
+    this.sky.material.uniforms.direction.value.set(
+      -.17+.018*Math.sin(settings.reduced?0:t*.018),
+      .215+.012*Math.sin(settings.reduced?0:t*.025),
+      -.963
+    ).normalize();
+    this.sky.material.uniforms.lunar.value.set(biome===3?'#292735':low?'#d0a8c9':'#b9d7be');
     const bob=!settings.reduced && moving && p.ground?Math.sin(t*12)*.034:0;
     this.camera.position.set(p.x,p.y+1.62+bob,p.z);
     this.camera.rotation.set(p.pitch,p.yaw,0);
